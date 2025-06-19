@@ -1,27 +1,42 @@
-"use client";
-
 import { useState } from "react";
 import axios from "axios";
-import ReactMarkdown from "react-markdown";
+
+type ReportType = {
+  restated_claim: string;
+  sources: {
+    title: string;
+    url: string;
+    summary: string;
+    strengths: string;
+    limitations: string;
+  }[];
+  verdict: string;
+  explanation: string;
+};
 
 export default function Home() {
   const [claim, setClaim] = useState("");
-  const [report, setReport] = useState("");
+  const [report, setReport] = useState<ReportType | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const submit = async (e: any) => {
     e.preventDefault();
     setLoading(true);
-    setReport("");
+    setError("");
+    setReport(null);
 
     try {
       const res = await axios.post(
         "https://greenwash-api-production.up.railway.app/check",
         { claim }
       );
-      setReport(res.data.report);
-    } catch {
-      setReport("❌ Something went wrong. Please try again.");
+      if (res.data.error) {
+        throw new Error(res.data.error);
+      }
+      setReport(res.data);
+    } catch (err: any) {
+      setError("❌ Something went wrong. Please try again.");
     }
 
     setLoading(false);
@@ -58,9 +73,40 @@ export default function Home() {
           </button>
         </form>
 
+        {error && (
+          <div className="mt-6 bg-red-100 border border-red-300 text-red-800 rounded-lg p-4">
+            {error}
+          </div>
+        )}
+
         {report && (
-          <div className="mt-10 bg-white border border-green-200 rounded-xl p-6 shadow-sm prose prose-green max-w-none">
-            <ReactMarkdown>{report}</ReactMarkdown>
+          <div className="mt-10 bg-white border border-green-200 rounded-xl p-6 shadow-sm space-y-6">
+            <h2 className="text-2xl font-bold text-green-800">📝 Restated Claim</h2>
+            <p>{report.restated_claim}</p>
+
+            <h2 className="text-2xl font-bold text-green-800">📚 Source Summaries</h2>
+            <ul className="space-y-4">
+              {report.sources.map((source, idx) => (
+                <li key={idx} className="border-l-4 border-green-400 pl-4">
+                  <p className="font-semibold">
+                    <a href={source.url} target="_blank" className="underline text-green-700">
+                      {source.title}
+                    </a>
+                  </p>
+                  <p><strong>Summary:</strong> {source.summary}</p>
+                  <p><strong>Strengths:</strong> {source.strengths}</p>
+                  <p><strong>Limitations:</strong> {source.limitations}</p>
+                </li>
+              ))}
+            </ul>
+
+            <h2 className="text-2xl font-bold text-green-800">🔍 Verdict</h2>
+            <p className="text-lg font-semibold">
+              {report.verdict === "Genuine" && "✅ Genuine"}
+              {report.verdict === "Vague or misleading" && "⚠️ Vague or misleading"}
+              {report.verdict === "Likely greenwashing" && "❌ Likely greenwashing"}
+            </p>
+            <p>{report.explanation}</p>
           </div>
         )}
       </div>
