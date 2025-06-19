@@ -8,6 +8,7 @@ interface ReportData {
   restated?: string;
   articles?: string;
   analysis?: string;
+  rationale?: string;
   verdict?: string;
   error?: string;
 }
@@ -83,6 +84,12 @@ export default function Home() {
       <h2 className="text-xl font-bold text-green-800 mb-1">🔍 Analysis</h2>
       <div className="prose prose-green max-w-none">
         <ReactMarkdown>{report.analysis}</ReactMarkdown>
+      </div>
+    </div>
+    <div>
+      <h2 className="text-xl font-bold text-green-800 mb-1">🧮 Rationale</h2>
+      <div className="prose prose-green max-w-none">
+        <ReactMarkdown>{report.rationale}</ReactMarkdown>
       </div>
     </div>
     <div className="border-l-4 pl-4 mt-4 text-green-800 bg-green-50 border-green-500 font-semibold text-lg">
