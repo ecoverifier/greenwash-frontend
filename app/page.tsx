@@ -69,38 +69,35 @@ export default function Home() {
         </form>
 
         {report && !report.error && (
-          <div className="mt-10 bg-white border border-green-200 rounded-xl p-6 shadow-sm space-y-6">
-            <div>
-              <h2 className="text-xl font-bold text-green-800 mb-1">
-                ✅ Restated Claim
-              </h2>
-              <p>{report.restated}</p>
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-green-800 mb-1">
-                📚 Articles
-              </h2>
-              <div className="prose prose-green max-w-none">
-                <ReactMarkdown>{report.articles || ""}</ReactMarkdown>
-              </div>
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-green-800 mb-1">
-                🔍 Analysis
-              </h2>
-              <p>{report.analysis}</p>
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-green-800 mb-1">
-                🧮 Rationale
-              </h2>
-              <p>{report.rationale}</p>
-            </div>
-            <div className="border-l-4 pl-4 mt-4 text-green-800 bg-green-50 border-green-500 font-semibold">
-              {report.verdict}
-            </div>
-          </div>
-        )}
+  <div className="mt-10 bg-white border border-green-200 rounded-xl p-6 shadow-sm space-y-6">
+    <div>
+      <h2 className="text-xl font-bold text-green-800 mb-1">✅ Restated Claim</h2>
+      <p>{report.restated}</p>
+    </div>
+    <div>
+      <h2 className="text-xl font-bold text-green-800 mb-1">📚 Evidence Articles</h2>
+      <div className="prose prose-green max-w-none">
+        <ReactMarkdown>{report.articles}</ReactMarkdown>
+      </div>
+    </div>
+    <div>
+      <h2 className="text-xl font-bold text-green-800 mb-1">🔍 Analysis</h2>
+      <div className="prose prose-green max-w-none">
+        <ReactMarkdown>{report.analysis}</ReactMarkdown>
+      </div>
+    </div>
+    <div>
+      <h2 className="text-xl font-bold text-green-800 mb-1">🧮 Rationale</h2>
+      <div className="prose prose-green max-w-none">
+        <ReactMarkdown>{report.rationale}</ReactMarkdown>
+      </div>
+    </div>
+    <div className="border-l-4 pl-4 mt-4 text-green-800 bg-green-50 border-green-500 font-semibold text-lg">
+      {report.verdict}
+    </div>
+  </div>
+)}
+
 
         {report?.error && (
           <div className="mt-6 p-4 bg-red-100 border border-red-300 text-red-800 rounded-lg">
