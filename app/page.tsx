@@ -4,33 +4,24 @@ import { useState } from "react";
 import axios from "axios";
 import ReactMarkdown from "react-markdown";
 
-interface ReportData {
-  restated?: string;
-  articles?: string;
-  analysis?: string;
-  rationale?: string;
-  verdict?: string;
-  error?: string;
-}
-
 export default function Home() {
   const [claim, setClaim] = useState("");
-  const [report, setReport] = useState<ReportData | null>(null);
+  const [report, setReport] = useState("");
   const [loading, setLoading] = useState(false);
 
   const submit = async (e: any) => {
     e.preventDefault();
     setLoading(true);
-    setReport(null);
+    setReport("");
 
     try {
       const res = await axios.post(
         "https://greenwash-api-production.up.railway.app/check",
         { claim }
       );
-      setReport(res.data);
+      setReport(res.data.report);
     } catch {
-      setReport({ error: "❌ Something went wrong. Please try again." });
+      setReport("❌ Something went wrong. Please try again.");
     }
 
     setLoading(false);
@@ -43,8 +34,7 @@ export default function Home() {
           🌿 Greenwashing Checker
         </h1>
         <p className="text-lg md:text-xl text-green-700 mb-6">
-          Enter a company’s sustainability claim below. We’ll evaluate it using
-          real-world sources and return a detailed analysis.
+          Enter a company’s sustainability claim below. We’ll evaluate it using real-world sources and return a detailed analysis.
         </p>
 
         <form
@@ -68,43 +58,9 @@ export default function Home() {
           </button>
         </form>
 
-        {report && !report.error && (
-          <div className="mt-10 bg-white border border-green-200 rounded-xl p-6 shadow-sm space-y-6">
-            <div>
-              <h2 className="text-xl font-bold text-green-800 mb-1">
-                ✅ Restated Claim
-              </h2>
-              <p>{report.restated}</p>
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-green-800 mb-1">
-                📚 Articles
-              </h2>
-              <div className="prose prose-green max-w-none">
-                <ReactMarkdown>{report.articles || ""}</ReactMarkdown>
-              </div>
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-green-800 mb-1">
-                🔍 Analysis
-              </h2>
-              <p>{report.analysis}</p>
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-green-800 mb-1">
-                🧮 Rationale
-              </h2>
-              <p>{report.rationale}</p>
-            </div>
-            <div className="border-l-4 pl-4 mt-4 text-green-800 bg-green-50 border-green-500 font-semibold">
-              {report.verdict}
-            </div>
-          </div>
-        )}
-
-        {report?.error && (
-          <div className="mt-6 p-4 bg-red-100 border border-red-300 text-red-800 rounded-lg">
-            {report.error}
+        {report && (
+          <div className="mt-10 bg-white border border-green-200 rounded-xl p-6 shadow-sm prose prose-green max-w-none">
+            <ReactMarkdown>{report}</ReactMarkdown>
           </div>
         )}
       </div>
