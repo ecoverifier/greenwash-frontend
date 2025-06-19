@@ -81,36 +81,46 @@ export default function Home() {
           </div>
         )}
 
-        {report && (
-          <div className="mt-10 bg-white border border-green-200 rounded-xl p-6 shadow-sm space-y-6">
-            <h2 className="text-2xl font-bold text-green-800">📝 Restated Claim</h2>
-            <p>{report.restated_claim}</p>
+{loading && (
+  <div className="mt-10 flex justify-center">
+    <svg className="animate-spin h-10 w-10 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+    </svg>
+  </div>
+)}
 
-            <h2 className="text-2xl font-bold text-green-800">📚 Source Summaries</h2>
-            <ul className="space-y-4">
-              {report.sources.map((source, idx) => (
-                <li key={idx} className="border-l-4 border-green-400 pl-4">
-                  <p className="font-semibold">
-                    <a href={source.url} target="_blank" className="underline text-green-700">
-                      {source.title}
-                    </a>
-                  </p>
-                  <p><strong>Summary:</strong> {source.summary}</p>
-                  <p><strong>Strengths:</strong> {source.strengths}</p>
-                  <p><strong>Limitations:</strong> {source.limitations}</p>
-                </li>
-              ))}
-            </ul>
-
-            <h2 className="text-2xl font-bold text-green-800">🔍 Verdict</h2>
-            <p className="text-lg font-semibold">
-              {report.verdict === "Genuine" && "✅ Genuine"}
-              {report.verdict === "Vague or misleading" && "⚠️ Vague or misleading"}
-              {report.verdict === "Likely greenwashing" && "❌ Likely greenwashing"}
-            </p>
-            <p>{report.explanation}</p>
+{report && (
+  <div className="mt-10 space-y-10">
+    <div>
+      <h2 className="text-2xl font-bold text-green-800 mb-4">📚 Sources Used</h2>
+      <div className="grid md:grid-cols-2 gap-6">
+        {report.sources.map((source, idx) => (
+          <div key={idx} className="bg-white border border-green-200 p-4 rounded-xl shadow-sm space-y-2">
+            <a href={source.url} target="_blank" rel="noopener noreferrer" className="block text-lg font-semibold text-green-700 hover:underline">
+              {source.title}
+            </a>
+            <p className="text-sm text-gray-700"><strong>Summary:</strong> {source.summary}</p>
+            <p className="text-sm text-green-800"><strong>Strengths:</strong> {source.strengths}</p>
+            <p className="text-sm text-red-700"><strong>Limitations:</strong> {source.limitations}</p>
           </div>
-        )}
+        ))}
+      </div>
+    </div>
+
+    <div className="bg-white border border-green-300 p-6 rounded-xl shadow-md space-y-4">
+      <h2 className="text-2xl font-bold text-green-800">📝 Final Evaluation</h2>
+      <p className="text-green-700 text-lg"><strong>Restated Claim:</strong> {report.restated_claim}</p>
+      <p className="text-lg font-semibold">
+        {report.verdict === "Genuine" && "✅ Genuine"}
+        {report.verdict === "Vague or misleading" && "⚠️ Vague or misleading"}
+        {report.verdict === "Likely greenwashing" && "❌ Likely greenwashing"}
+      </p>
+      <p className="text-gray-800">{report.explanation}</p>
+    </div>
+  </div>
+)}
+
       </div>
     </main>
   );
