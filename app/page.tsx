@@ -85,7 +85,12 @@ export default function Home() {
         "https://greenwash-api-production.up.railway.app/check",
         { claim }
       );
-      if (res.data.error) throw new Error(res.data.error);
+      if (res.data.error && !res.data.restated_claim) {
+        throw new Error(res.data.error);
+      }
+      setReport(res.data);
+      await saveChat(claim, res.data);
+      
       setReport(res.data);
       await saveChat(claim, res.data);
     } catch {
