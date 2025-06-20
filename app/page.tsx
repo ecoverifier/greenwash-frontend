@@ -81,7 +81,7 @@ export default function Home() {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(18);
     doc.setTextColor(40, 167, 69);
-    doc.text("🌿 Greenwatch Sustainability Report", pageWidth / 2, y, { align: "center" });
+    doc.text("🌿 EcoVerifier Sustainability Report", pageWidth / 2, y, { align: "center" });
     y += 15;
   
     // Restated Claim
@@ -142,7 +142,7 @@ export default function Home() {
       <header className="flex items-center justify-between max-w-5xl mx-auto mb-12">
         <div className="flex items-center space-x-4">
           <img src="favicon.ico" alt="Logo" className="h-10 w-10" />
-          <h1 className="text-2xl font-semibold text-emerald-600 tracking-tight">Greenwatch</h1>
+          <h1 className="text-2xl font-semibold text-emerald-600 tracking-tight">EcoVerifier</h1>
         </div>
       </header>
 
