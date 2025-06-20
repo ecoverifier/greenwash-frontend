@@ -70,7 +70,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-emerald-50 to-teal-100 text-gray-900 font-montserrat px-4 py-10 md:px-8">
+    <main className="min-h-screen bg-gradient-to-b from-white via-gray-50 to-emerald-50 text-gray-900 font-montserrat px-4 py-10 md:px-8">
       {/* Header */}
       <header className="flex items-center justify-between max-w-5xl mx-auto mb-12">
         <div className="flex items-center space-x-3">
@@ -93,17 +93,24 @@ export default function Home() {
       >
         <textarea
           rows={3}
-          className="w-full resize-none p-4 pr-12 text-base text-gray-900 bg-white focus:outline-none font-medium"
-          placeholder={samples[sampleIndex].slice(0, charIndex)}
+          className="w-full resize-none p-4 pr-12 text-base text-gray-900 bg-white focus:outline-none font-medium placeholder:text-gray-500"
+          placeholder={`${samples[sampleIndex].slice(0, charIndex)}${charIndex < samples[sampleIndex].length ? '|' : ''}`}
           value={claim}
           onChange={(e) => setClaim(e.target.value)}
         />
         <button
           type="submit"
-          className="absolute bottom-3 right-3 bg-gradient-to-r from-teal-400 to-emerald-400 text-white p-2 rounded-full shadow-md transition"
+          className="absolute bottom-3 right-3 bg-gradient-to-r from-teal-400 to-emerald-400 text-white p-2 rounded-full shadow-md hover:scale-105 active:scale-95 transition-transform duration-150"
           disabled={loading}
         >
-          <PaperPlaneIcon className="h-5 w-5" />
+          {loading ? (
+            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+            </svg>
+          ) : (
+            <PaperPlaneIcon className="h-5 w-5" />
+          )}
         </button>
       </form>
 
