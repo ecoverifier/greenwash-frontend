@@ -5,9 +5,7 @@ import axios from "axios";
 import { PaperPlaneIcon, DownloadIcon } from "@radix-ui/react-icons";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import logoImage from "@/public/logo.svg";
 
-// === Types ===
 type ReportType = {
   restated_claim: string;
   sources: {
@@ -109,34 +107,34 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-white text-gray-900 font-comic px-4 py-10 md:px-8">
+    <main className="min-h-screen bg-[#f7f9fb] text-gray-900 font-sans px-6 py-12 md:px-10">
       <header className="flex items-center justify-between max-w-5xl mx-auto mb-12">
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-4">
           <img src="/logo.svg" alt="Logo" className="h-10 w-10" />
-          <h1 className="text-2xl font-bold text-green-600 tracking-tight">Greenwatch</h1>
+          <h1 className="text-2xl font-semibold text-emerald-600 tracking-tight">Greenwatch</h1>
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto text-center mb-6">
-        <p className="text-xl text-gray-700">
-          Enter a sustainability claim below. We'll analyze it using real-world sources.
+      <div className="max-w-2xl mx-auto text-center mb-8">
+        <p className="text-lg text-gray-700 leading-relaxed">
+          Enter a sustainability claim. We'll analyze it using real-world evidence.
         </p>
       </div>
 
       <form
         onSubmit={submit}
-        className="max-w-2xl mx-auto relative bg-white border border-gray-300 rounded-xl overflow-hidden shadow-sm"
+        className="max-w-2xl mx-auto relative bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm"
       >
         <textarea
           rows={3}
-          className="w-full resize-none p-4 pr-12 text-base text-gray-800 bg-white focus:outline-none font-medium placeholder:text-gray-400"
+          className="w-full resize-none p-5 pr-14 text-base text-gray-800 bg-white focus:outline-none font-medium placeholder-gray-400"
           placeholder={`${samples[sampleIndex].slice(0, charIndex)}${charIndex < samples[sampleIndex].length ? '|' : ''}`}
           value={claim}
           onChange={(e) => setClaim(e.target.value)}
         />
         <button
           type="submit"
-          className="absolute bottom-3 right-3 bg-green-500 text-white p-2 rounded-full shadow-md hover:scale-105 active:scale-95 transition-transform duration-150"
+          className="absolute bottom-4 right-4 bg-emerald-500 text-white p-2 rounded-full shadow-md hover:bg-emerald-600 active:scale-95 transition"
           disabled={loading}
         >
           {loading ? (
@@ -151,11 +149,11 @@ export default function Home() {
       </form>
 
       {loading && (
-        <div className="max-w-2xl mx-auto text-center mt-3 text-sm text-gray-500">Analyzing claim...</div>
+        <div className="max-w-2xl mx-auto text-center mt-4 text-sm text-gray-500">Analyzing claim...</div>
       )}
 
       {error && (
-        <div className="max-w-2xl mx-auto mt-4 bg-red-100 border border-red-300 text-red-700 rounded-md p-4 text-sm">
+        <div className="max-w-2xl mx-auto mt-5 bg-red-100 border border-red-300 text-red-700 rounded-lg p-4 text-sm">
           {error}
         </div>
       )}
@@ -165,33 +163,33 @@ export default function Home() {
           <div className="flex justify-end">
             <button
               onClick={downloadPDF}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-md shadow-md transition"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-md shadow-sm transition"
             >
               <DownloadIcon className="h-4 w-4" /> Download PDF
             </button>
           </div>
 
           <div className="bg-white border border-gray-200 rounded-xl shadow p-6">
-            <h2 className="text-xl font-bold text-green-700 mb-2">Restated Claim</h2>
-            <p className="text-gray-900 leading-relaxed">{report.restated_claim}</p>
+            <h2 className="text-xl font-semibold text-emerald-700 mb-3">Restated Claim</h2>
+            <p className="text-gray-800 leading-relaxed">{report.restated_claim}</p>
           </div>
 
           <div className="bg-white border border-gray-200 rounded-xl shadow p-6">
-            <h2 className="text-xl font-bold text-green-700 mb-2">Evaluation</h2>
+            <h2 className="text-xl font-semibold text-emerald-700 mb-3">Evaluation</h2>
             <p className="text-base text-gray-900 font-medium mb-2">{report.verdict}</p>
-            <p className="text-gray-800 leading-relaxed">{report.explanation}</p>
+            <p className="text-gray-700 leading-relaxed">{report.explanation}</p>
           </div>
 
           <div className="bg-white border border-gray-200 rounded-xl shadow p-6">
-            <h2 className="text-xl font-bold text-green-700 mb-4">Sources Analyzed</h2>
+            <h2 className="text-xl font-semibold text-emerald-700 mb-4">Sources Analyzed</h2>
             <ul className="space-y-4">
               {report.sources.map((source, idx) => (
-                <li key={idx} className="border border-gray-100 rounded-md p-4">
+                <li key={idx} className="border border-gray-100 rounded-lg p-4 hover:bg-gray-50 transition">
                   <a
                     href={source.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block font-semibold text-green-700 hover:underline mb-1"
+                    className="block font-semibold text-emerald-700 hover:underline mb-1"
                   >
                     {source.title}
                   </a>
