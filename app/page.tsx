@@ -189,50 +189,56 @@ export default function Home() {
         </div>
       )}
 
-      {report && (
-        <div className="max-w-3xl mx-auto mt-10 space-y-8">
-          <div className="flex justify-end">
-            <button
-              onClick={downloadPDF}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-md shadow-sm transition"
-            >
-              <DownloadIcon className="h-4 w-4" /> Download PDF
-            </button>
-          </div>
+{report && (
+  <div className="max-w-3xl mx-auto mt-12 px-4 py-6 bg-white rounded-2xl shadow-lg border border-gray-200">
+    <div className="flex justify-between items-center mb-6">
+      <h2 className="text-2xl font-bold text-emerald-700">Greenwatch Report</h2>
+      <button
+        onClick={downloadPDF}
+        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-md transition"
+      >
+        <DownloadIcon className="h-4 w-4" /> Download PDF
+      </button>
+    </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl shadow p-6">
-            <h2 className="text-xl font-semibold text-emerald-700 mb-3">Restated Claim</h2>
-            <p className="text-gray-800 leading-relaxed">{report.restated_claim}</p>
-          </div>
+    <section className="space-y-6 text-gray-800 leading-relaxed text-[15px]">
+      <div>
+        <h3 className="text-lg font-semibold text-emerald-600 mb-2">Restated Claim</h3>
+        <p>{report.restated_claim}</p>
+      </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl shadow p-6">
-            <h2 className="text-xl font-semibold text-emerald-700 mb-3">Evaluation</h2>
-            <p className="text-base text-gray-900 font-medium mb-2">{report.verdict}</p>
-            <p className="text-gray-700 leading-relaxed">{report.explanation}</p>
-          </div>
+      <div>
+        <h3 className="text-lg font-semibold text-emerald-600 mb-2">Evaluation</h3>
+        <p className="text-base font-medium text-gray-900 mb-1">{report.verdict}</p>
+        <p>{report.explanation}</p>
+      </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl shadow p-6">
-            <h2 className="text-xl font-semibold text-emerald-700 mb-4">Sources Analyzed</h2>
-            <ul className="space-y-4">
-              {report.sources.map((source, idx) => (
-                <li key={idx} className="border border-gray-100 rounded-lg p-4 hover:bg-gray-50 transition">
-                  <a
-                    href={source.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block font-semibold text-emerald-700 hover:underline mb-1"
-                  >
-                    {source.title}
-                  </a>
-                  <p className="text-sm text-gray-700 mb-1">{source.summary}</p>
-                  <p className="text-sm text-gray-600"><strong>Strengths:</strong> {source.strengths}</p>
-                  <p className="text-sm text-gray-600"><strong>Limitations:</strong> {source.limitations}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
+      <div>
+        <h3 className="text-lg font-semibold text-emerald-600 mb-2">Sources</h3>
+        <ol className="list-decimal list-inside space-y-4">
+          {report.sources.map((source, idx) => (
+            <li key={idx}>
+              <p className="font-semibold text-emerald-700">
+                <a
+                  href={source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline"
+                >
+                  {source.title}
+                </a>
+              </p>
+              <p className="text-sm text-gray-700 mb-1">{source.summary}</p>
+              <p className="text-sm text-gray-600"><strong>Strengths:</strong> {source.strengths}</p>
+              <p className="text-sm text-gray-600"><strong>Limitations:</strong> {source.limitations}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  </div>
+)}
+
     </main>
   );
 }
