@@ -72,39 +72,70 @@ export default function Home() {
 
   const downloadPDF = () => {
     if (!report) return;
+  
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
-
+    let y = 20;
+  
+    // Title
     doc.setFont("helvetica", "bold");
     doc.setFontSize(18);
     doc.setTextColor(40, 167, 69);
-    doc.text("🌿 Greenwatch Sustainability Report", pageWidth / 2, 20, { align: "center" });
-
-    doc.setFont("times", "normal");
+    doc.text("🌿 Greenwatch Sustainability Report", pageWidth / 2, y, { align: "center" });
+    y += 15;
+  
+    // Restated Claim
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(12);
     doc.setTextColor(33, 37, 41);
-    doc.text("Restated Claim:", 14, 35);
-    doc.text(report.restated_claim, 14, 42, { maxWidth: 180 });
-
-    doc.text("Evaluation:", 14, 54);
-    doc.text(`Verdict: ${report.verdict}`, 14, 60);
-    doc.text(report.explanation, 14, 68, { maxWidth: 180 });
-
-    autoTable(doc, {
-      startY: 80,
-      head: [["Title", "Summary", "Strengths", "Limitations"]],
-      body: report.sources.map(source => [
-        source.title,
-        source.summary,
-        source.strengths,
-        source.limitations
-      ]),
-      styles: { fontSize: 10, font: "courier" },
-      headStyles: { fillColor: [40, 167, 69] }
+    doc.text("Restated Claim:", 14, y);
+    y += 7;
+    const restatedClaimLines = doc.splitTextToSize(report.restated_claim, 180);
+    doc.text(restatedClaimLines, 14, y);
+    y += restatedClaimLines.length * 7 + 5;
+  
+    // Evaluation
+    doc.text("Evaluation:", 14, y);
+    y += 7;
+    doc.text(`Verdict: ${report.verdict}`, 14, y);
+    y += 7;
+    const explanationLines = doc.splitTextToSize(report.explanation, 180);
+    doc.text(explanationLines, 14, y);
+    y += explanationLines.length * 7 + 5;
+  
+    // Sources
+    doc.text("Sources:", 14, y);
+    y += 8;
+  
+    report.sources.forEach((source, index) => {
+      if (y > 270) { // page break if too low
+        doc.addPage();
+        y = 20;
+      }
+  
+      doc.setFont("helvetica", "bold");
+      doc.text(`${index + 1}. ${source.title}`, 14, y);
+      y += 6;
+  
+      doc.setFont("helvetica", "normal");
+  
+      const summaryLines = doc.splitTextToSize(`Summary: ${source.summary}`, 180);
+      doc.text(summaryLines, 14, y);
+      y += summaryLines.length * 6;
+  
+      const strengthsLines = doc.splitTextToSize(`Strengths: ${source.strengths}`, 180);
+      doc.text(strengthsLines, 14, y);
+      y += strengthsLines.length * 6;
+  
+      const limitationsLines = doc.splitTextToSize(`Limitations: ${source.limitations}`, 180);
+      doc.text(limitationsLines, 14, y);
+      y += limitationsLines.length * 6 + 5;
     });
-
+  
+    // Save
     doc.save("greenwatch_report.pdf");
   };
+  
 
   return (
     <main className="min-h-screen bg-[#f7f9fb] text-gray-900 font-sans px-6 py-12 md:px-10">
