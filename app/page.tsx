@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { PaperPlaneIcon } from "@radix-ui/react-icons";
+import { PaperPlaneIcon, DownloadIcon } from "@radix-ui/react-icons";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import logoImage from "@/public/logo.svg";
 
 // === Types ===
 type ReportType = {
@@ -69,38 +72,71 @@ export default function Home() {
     setLoading(false);
   };
 
+  const downloadPDF = () => {
+    if (!report) return;
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.setTextColor(40, 167, 69);
+    doc.text("🌿 Greenwatch Sustainability Report", pageWidth / 2, 20, { align: "center" });
+
+    doc.setFont("times", "normal");
+    doc.setFontSize(12);
+    doc.setTextColor(33, 37, 41);
+    doc.text("Restated Claim:", 14, 35);
+    doc.text(report.restated_claim, 14, 42, { maxWidth: 180 });
+
+    doc.text("Evaluation:", 14, 54);
+    doc.text(`Verdict: ${report.verdict}`, 14, 60);
+    doc.text(report.explanation, 14, 68, { maxWidth: 180 });
+
+    autoTable(doc, {
+      startY: 80,
+      head: [["Title", "Summary", "Strengths", "Limitations"]],
+      body: report.sources.map(source => [
+        source.title,
+        source.summary,
+        source.strengths,
+        source.limitations
+      ]),
+      styles: { fontSize: 10, font: "courier" },
+      headStyles: { fillColor: [40, 167, 69] }
+    });
+
+    doc.save("greenwatch_report.pdf");
+  };
+
   return (
-    <main className="min-h-screen bg-gradient-to-b from-white via-gray-50 to-emerald-50 text-gray-900 font-montserrat px-4 py-10 md:px-8">
-      {/* Header */}
+    <main className="min-h-screen bg-white text-gray-900 font-comic px-4 py-10 md:px-8">
       <header className="flex items-center justify-between max-w-5xl mx-auto mb-12">
         <div className="flex items-center space-x-3">
-          <img src="favicon.ico" alt="Logo" className="h-10 w-10" />
-          <h1 className="text-2xl font-bold text-emerald-700 tracking-tight">Greenwatch</h1>
+          <img src="/logo.svg" alt="Logo" className="h-10 w-10" />
+          <h1 className="text-2xl font-bold text-green-600 tracking-tight">Greenwatch</h1>
         </div>
       </header>
 
-      {/* Claim prompt */}
       <div className="max-w-2xl mx-auto text-center mb-6">
-        <p className="text-xl text-gray-800">
+        <p className="text-xl text-gray-700">
           Enter a sustainability claim below. We'll analyze it using real-world sources.
         </p>
       </div>
 
-      {/* Chatbox */}
       <form
         onSubmit={submit}
-        className="max-w-2xl mx-auto relative bg-white border border-emerald-200 rounded-xl overflow-hidden shadow-sm"
+        className="max-w-2xl mx-auto relative bg-white border border-gray-300 rounded-xl overflow-hidden shadow-sm"
       >
         <textarea
           rows={3}
-          className="w-full resize-none p-4 pr-12 text-base text-gray-900 bg-white focus:outline-none font-medium placeholder:text-gray-500"
+          className="w-full resize-none p-4 pr-12 text-base text-gray-800 bg-white focus:outline-none font-medium placeholder:text-gray-400"
           placeholder={`${samples[sampleIndex].slice(0, charIndex)}${charIndex < samples[sampleIndex].length ? '|' : ''}`}
           value={claim}
           onChange={(e) => setClaim(e.target.value)}
         />
         <button
           type="submit"
-          className="absolute bottom-3 right-3 bg-gradient-to-r from-teal-400 to-emerald-400 text-white p-2 rounded-full shadow-md hover:scale-105 active:scale-95 transition-transform duration-150"
+          className="absolute bottom-3 right-3 bg-green-500 text-white p-2 rounded-full shadow-md hover:scale-105 active:scale-95 transition-transform duration-150"
           disabled={loading}
         >
           {loading ? (
@@ -114,37 +150,48 @@ export default function Home() {
         </button>
       </form>
 
-      {/* Error message */}
+      {loading && (
+        <div className="max-w-2xl mx-auto text-center mt-3 text-sm text-gray-500">Analyzing claim...</div>
+      )}
+
       {error && (
         <div className="max-w-2xl mx-auto mt-4 bg-red-100 border border-red-300 text-red-700 rounded-md p-4 text-sm">
           {error}
         </div>
       )}
 
-      {/* Report Output */}
       {report && (
         <div className="max-w-3xl mx-auto mt-10 space-y-8">
+          <div className="flex justify-end">
+            <button
+              onClick={downloadPDF}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-md shadow-md transition"
+            >
+              <DownloadIcon className="h-4 w-4" /> Download PDF
+            </button>
+          </div>
+
           <div className="bg-white border border-gray-200 rounded-xl shadow p-6">
-            <h2 className="text-xl font-semibold text-emerald-800 mb-2">Restated Claim</h2>
+            <h2 className="text-xl font-bold text-green-700 mb-2">Restated Claim</h2>
             <p className="text-gray-900 leading-relaxed">{report.restated_claim}</p>
           </div>
 
           <div className="bg-white border border-gray-200 rounded-xl shadow p-6">
-            <h2 className="text-xl font-semibold text-emerald-800 mb-2">Evaluation</h2>
+            <h2 className="text-xl font-bold text-green-700 mb-2">Evaluation</h2>
             <p className="text-base text-gray-900 font-medium mb-2">{report.verdict}</p>
             <p className="text-gray-800 leading-relaxed">{report.explanation}</p>
           </div>
 
           <div className="bg-white border border-gray-200 rounded-xl shadow p-6">
-            <h2 className="text-xl font-semibold text-emerald-800 mb-4">Sources Analyzed</h2>
+            <h2 className="text-xl font-bold text-green-700 mb-4">Sources Analyzed</h2>
             <ul className="space-y-4">
               {report.sources.map((source, idx) => (
-                <li key={idx} className="border border-emerald-100 rounded-md p-4">
+                <li key={idx} className="border border-gray-100 rounded-md p-4">
                   <a
                     href={source.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block font-semibold text-emerald-700 hover:underline mb-1"
+                    className="block font-semibold text-green-700 hover:underline mb-1"
                   >
                     {source.title}
                   </a>
