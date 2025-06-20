@@ -192,7 +192,7 @@ export default function Home() {
 {report && (
   <div className="max-w-3xl mx-auto mt-12 px-4 py-6 bg-white rounded-2xl shadow-lg border border-gray-200">
     <div className="flex justify-between items-center mb-6">
-      <h2 className="text-2xl font-bold text-emerald-700">Greenwatch Report</h2>
+      <h2 className="text-2xl font-bold text-emerald-700">Report</h2>
       <button
         onClick={downloadPDF}
         className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-md transition"
