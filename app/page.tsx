@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
+import { PaperPlaneIcon } from "@radix-ui/react-icons";
 
+// === Types ===
 type ReportType = {
   restated_claim: string;
   sources: {
@@ -21,9 +23,34 @@ export default function Home() {
   const [report, setReport] = useState<ReportType | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [sampleIndex, setSampleIndex] = useState(0);
+  const [charIndex, setCharIndex] = useState(0);
+  const samples = [
+    "e.g., Google says its data centers are 100% sustainable",
+    "e.g., Amazon claims to reach net-zero by 2040",
+    "e.g., Tesla says all vehicles are carbon neutral"
+  ];
 
-  const submit = async (e: any) => {
-    e.preventDefault();
+  useEffect(() => {
+    const currentSample = samples[sampleIndex];
+    if (charIndex < currentSample.length) {
+      const timeout = setTimeout(() => {
+        setCharIndex((prev) => prev + 1);
+      }, 30);
+      return () => clearTimeout(timeout);
+    } else {
+      const nextTimeout = setTimeout(() => {
+        setSampleIndex((prev) => (prev + 1) % samples.length);
+        setCharIndex(0);
+      }, 2000);
+      return () => clearTimeout(nextTimeout);
+    }
+  }, [charIndex, sampleIndex]);
+
+  const submit = async (e?: any) => {
+    if (e) e.preventDefault();
+    if (!claim.trim()) return;
+
     setLoading(true);
     setError("");
     setReport(null);
@@ -33,95 +60,96 @@ export default function Home() {
         "https://greenwash-api-production.up.railway.app/check",
         { claim }
       );
-      if (res.data.error) {
-        throw new Error(res.data.error);
-      }
+      if (res.data.error) throw new Error(res.data.error);
       setReport(res.data);
     } catch (err: any) {
-      setError("❌ Something went wrong. Please try again.");
+      setError("Something went wrong. Please try again.");
     }
 
     setLoading(false);
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 text-gray-900 px-4 py-10 md:px-8 font-serif">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-green-800 mb-4 leading-tight tracking-tight">
-          🌿 Greenwashing Checker
-        </h1>
-        <p className="text-lg md:text-xl text-green-700 mb-6">
-          Enter a company’s sustainability claim below. We’ll evaluate it using real-world sources and return a detailed analysis.
+    <main className="min-h-screen bg-gradient-to-b from-emerald-50 to-teal-100 text-gray-900 font-montserrat px-4 py-10 md:px-8">
+      {/* Header */}
+      <header className="flex items-center justify-between max-w-5xl mx-auto mb-12">
+        <div className="flex items-center space-x-3">
+          <img src="/logo.svg" alt="Logo" className="h-10 w-10" />
+          <h1 className="text-2xl font-bold text-emerald-700 tracking-tight">Greenwatch</h1>
+        </div>
+      </header>
+
+      {/* Claim prompt */}
+      <div className="max-w-2xl mx-auto text-center mb-6">
+        <p className="text-xl text-gray-800">
+          Enter a sustainability claim below. We'll analyze it using real-world sources.
         </p>
+      </div>
 
-        <form
-          onSubmit={submit}
-          className="bg-white shadow-lg rounded-2xl p-6 space-y-4"
+      {/* Chatbox */}
+      <form
+        onSubmit={submit}
+        className="max-w-2xl mx-auto relative bg-white border border-emerald-200 rounded-xl overflow-hidden shadow-sm"
+      >
+        <textarea
+          rows={3}
+          className="w-full resize-none p-4 pr-12 text-base text-gray-900 bg-white focus:outline-none font-medium"
+          placeholder={samples[sampleIndex].slice(0, charIndex)}
+          value={claim}
+          onChange={(e) => setClaim(e.target.value)}
+        />
+        <button
+          type="submit"
+          className="absolute bottom-3 right-3 bg-gradient-to-r from-teal-400 to-emerald-400 text-white p-2 rounded-full shadow-md transition"
+          disabled={loading}
         >
-          <textarea
-            rows={4}
-            className="w-full p-4 text-base border border-green-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
-            placeholder="e.g., Google says its data centers are 100% sustainable"
-            value={claim}
-            onChange={(e) => setClaim(e.target.value)}
-            required
-          />
-          <button
-            type="submit"
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition duration-300"
-            disabled={loading}
-          >
-            {loading ? "Checking..." : "Evaluate Claim"}
-          </button>
-        </form>
+          <PaperPlaneIcon className="h-5 w-5" />
+        </button>
+      </form>
 
-        {error && (
-          <div className="mt-6 bg-red-100 border border-red-300 text-red-800 rounded-lg p-4">
-            {error}
+      {/* Error message */}
+      {error && (
+        <div className="max-w-2xl mx-auto mt-4 bg-red-100 border border-red-300 text-red-700 rounded-md p-4 text-sm">
+          {error}
+        </div>
+      )}
+
+      {/* Report Output */}
+      {report && (
+        <div className="max-w-3xl mx-auto mt-10 space-y-8">
+          <div className="bg-white border border-gray-200 rounded-xl shadow p-6">
+            <h2 className="text-xl font-semibold text-emerald-800 mb-2">Restated Claim</h2>
+            <p className="text-gray-900 leading-relaxed">{report.restated_claim}</p>
           </div>
-        )}
 
-{loading && (
-  <div className="mt-10 flex justify-center">
-    <svg className="animate-spin h-10 w-10 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-    </svg>
-  </div>
-)}
-
-{report && (
-  <div className="mt-10 space-y-10">
-    <div>
-      <h2 className="text-2xl font-bold text-green-800 mb-4">📚 Sources Used</h2>
-      <div className="grid md:grid-cols-2 gap-6">
-        {report.sources.map((source, idx) => (
-          <div key={idx} className="bg-white border border-green-200 p-4 rounded-xl shadow-sm space-y-2">
-            <a href={source.url} target="_blank" rel="noopener noreferrer" className="block text-lg font-semibold text-green-700 hover:underline">
-              {source.title}
-            </a>
-            <p className="text-sm text-gray-700"><strong>Summary:</strong> {source.summary}</p>
-            <p className="text-sm text-green-800"><strong>Strengths:</strong> {source.strengths}</p>
-            <p className="text-sm text-red-700"><strong>Limitations:</strong> {source.limitations}</p>
+          <div className="bg-white border border-gray-200 rounded-xl shadow p-6">
+            <h2 className="text-xl font-semibold text-emerald-800 mb-2">Evaluation</h2>
+            <p className="text-base text-gray-900 font-medium mb-2">{report.verdict}</p>
+            <p className="text-gray-800 leading-relaxed">{report.explanation}</p>
           </div>
-        ))}
-      </div>
-    </div>
 
-    <div className="bg-white border border-green-300 p-6 rounded-xl shadow-md space-y-4">
-      <h2 className="text-2xl font-bold text-green-800">📝 Final Evaluation</h2>
-      <p className="text-green-700 text-lg"><strong>Restated Claim:</strong> {report.restated_claim}</p>
-      <p className="text-lg font-semibold">
-        {report.verdict === "Genuine" && "✅ Genuine"}
-        {report.verdict === "Vague or misleading" && "⚠️ Vague or misleading"}
-        {report.verdict === "Likely greenwashing" && "❌ Likely greenwashing"}
-      </p>
-      <p className="text-gray-800">{report.explanation}</p>
-    </div>
-  </div>
-)}
-
-      </div>
+          <div className="bg-white border border-gray-200 rounded-xl shadow p-6">
+            <h2 className="text-xl font-semibold text-emerald-800 mb-4">Sources Analyzed</h2>
+            <ul className="space-y-4">
+              {report.sources.map((source, idx) => (
+                <li key={idx} className="border border-emerald-100 rounded-md p-4">
+                  <a
+                    href={source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block font-semibold text-emerald-700 hover:underline mb-1"
+                  >
+                    {source.title}
+                  </a>
+                  <p className="text-sm text-gray-700 mb-1">{source.summary}</p>
+                  <p className="text-sm text-gray-600"><strong>Strengths:</strong> {source.strengths}</p>
+                  <p className="text-sm text-gray-600"><strong>Limitations:</strong> {source.limitations}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
