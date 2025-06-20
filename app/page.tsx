@@ -81,7 +81,7 @@ export default function Home() {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(18);
     doc.setTextColor(40, 167, 69);
-    doc.text("🌿 EcoVerifier Sustainability Report", pageWidth / 2, y, { align: "center" });
+    doc.text("EcoVerifier Sustainability Report", pageWidth / 2, y, { align: "center" });
     y += 15;
   
     // Restated Claim
