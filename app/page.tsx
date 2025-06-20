@@ -74,7 +74,7 @@ export default function Home() {
       {/* Header */}
       <header className="flex items-center justify-between max-w-5xl mx-auto mb-12">
         <div className="flex items-center space-x-3">
-          <img src="/logo.svg" alt="Logo" className="h-10 w-10" />
+          <img src="favicon.ico" alt="Logo" className="h-10 w-10" />
           <h1 className="text-2xl font-bold text-emerald-700 tracking-tight">Greenwatch</h1>
         </div>
       </header>
