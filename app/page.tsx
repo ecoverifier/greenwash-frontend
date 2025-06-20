@@ -110,7 +110,7 @@ export default function Home() {
     <main className="min-h-screen bg-[#f7f9fb] text-gray-900 font-sans px-6 py-12 md:px-10">
       <header className="flex items-center justify-between max-w-5xl mx-auto mb-12">
         <div className="flex items-center space-x-4">
-          <img src="/logo.svg" alt="Logo" className="h-10 w-10" />
+          <img src="favicon.ico" alt="Logo" className="h-10 w-10" />
           <h1 className="text-2xl font-semibold text-emerald-600 tracking-tight">Greenwatch</h1>
         </div>
       </header>
