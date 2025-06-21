@@ -3,6 +3,9 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { PaperPlaneIcon, DownloadIcon } from "@radix-ui/react-icons";
 import jsPDF from "jspdf";
+import { FaUserCircle, FaRobot, FaPlus, FaTrashAlt } from "react-icons/fa";
+import { HiArrowUpCircle } from "react-icons/hi2";
+
 
 import { auth, provider, db, signInWithPopup, signOut } from "./firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
@@ -263,10 +266,12 @@ export default function Home() {
   return (
     <div className="flex min-h-screen bg-[#f7f9fb] text-gray-900 font-sans">
       {/* Sidebar */}
-      <aside className="w-72 bg-white border-r border-gray-200 px-6 py-6 shadow-sm">
-  <h2 className="text-xl font-semibold text-emerald-700 mb-4">
+      <aside className="w-72 bg-white border-r border-gray-200 px-6 py-6 shadow-md">
+  <h2 className="text-xl font-semibold text-emerald-700 mb-6 tracking-tight">
     Your Reports
   </h2>
+
+  {/* New Claim Button */}
   <button
     onClick={() => {
       setReport(null);
@@ -274,11 +279,14 @@ export default function Home() {
       setActiveReportId(null);
       setSessionStarted(false);
     }}
-    className="block mb-6 text-sm font-medium text-emerald-500 hover:underline"
+    className="flex items-center gap-2 mb-6 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition"
   >
-    + New Claim
+    <FaPlus className="w-4 h-4" />
+    New Claim
   </button>
-  <div className="space-y-3">
+
+  {/* Report List */}
+  <div className="space-y-4">
     {reports.map((r) => (
       <div
         key={r.id}
@@ -288,15 +296,17 @@ export default function Home() {
           setActiveReportId(r.id);
           setSessionStarted(true);
         }}
-        className={`relative group p-4 rounded-lg border text-sm cursor-pointer transition-all ${
+        className={`relative group p-4 rounded-lg border text-sm cursor-pointer transition-all duration-200 ${
           r.id === activeReportId
-            ? "bg-emerald-50 border-emerald-200"
+            ? "bg-emerald-50 border-emerald-300 ring-1 ring-emerald-200"
             : "bg-white hover:bg-gray-50 border-gray-200"
         }`}
       >
         <span className="block pr-6 text-gray-800 font-medium truncate">
           {r.claim}
         </span>
+
+        {/* Delete Button */}
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -328,21 +338,26 @@ export default function Home() {
               deleteDoc(doc(db, "reports", r.id));
             }
           }}
-          className="absolute top-2 right-2 text-red-400 hover:text-red-600 text-xs"
+          className="absolute top-3 right-3 text-red-400 hover:text-red-600 transition"
+          title="Delete report"
         >
-          ✕
+          <FaTrashAlt className="w-4 h-4" />
         </button>
       </div>
     ))}
   </div>
 </aside>
 
+
   
-<main className="flex-1 px-8 py-12 transition-all duration-300">
-  <div className="flex justify-between items-center mb-10">
+
+
+<main className="flex-1 px-6 py-10 sm:px-10 bg-gray-50 transition-all duration-300 min-h-screen">
+  {/* Header */}
+  <div className="flex justify-between items-center mb-12">
     <div className="flex items-center gap-3">
-      <img src="favicon.ico" alt="EcoVerifier Logo" className="w-9 h-9" />
-      <span className="text-2xl font-bold text-emerald-600 tracking-tight">
+      <img src="favicon.ico" alt="EcoVerifier Logo" className="w-10 h-10" />
+      <span className="text-2xl font-semibold text-emerald-600 tracking-tight">
         EcoVerifier
       </span>
     </div>
@@ -350,102 +365,98 @@ export default function Home() {
     {user ? (
       <button
         onClick={handleLogout}
-        className="text-sm text-red-500 hover:underline"
+        className="text-sm text-red-600 hover:underline font-medium"
       >
         Logout
       </button>
     ) : (
       <button
         onClick={login}
-        className="text-sm text-emerald-600 hover:underline"
+        className="text-sm text-emerald-700 hover:underline font-medium"
       >
         Login with Google
       </button>
     )}
   </div>
 
-  {/* Conditional content: form vs chat layout */}
+  {/* Welcome Page */}
   {!sessionStarted ? (
-    <div className="w-full max-w-xl mx-auto text-center space-y-10">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold text-emerald-700">EcoVerifier</h1>
-        <p className="text-gray-600 text-base">
-          Enter a sustainability claim to begin.
+    <div className="w-full max-w-2xl mx-auto text-center space-y-12 pt-12">
+      <div className="space-y-6">
+        <h1 className="text-5xl sm:text-6xl font-extrabold text-emerald-700 leading-tight">
+          Verify Sustainability Claims in Seconds.
+        </h1>
+        <p className="text-gray-600 text-lg max-w-xl mx-auto">
+          EcoVerifier helps you cut through greenwashing by analyzing
+          environmental claims using trusted sources.
         </p>
       </div>
 
-      <form onSubmit={submit} className="space-y-4">
+      <form onSubmit={submit} className="relative mt-12">
         <textarea
           rows={4}
-          className="w-full p-4 border border-gray-300 rounded-lg shadow-sm resize-none focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm"
+          className="w-full p-5 pr-16 border border-gray-300 rounded-xl shadow-md resize-none focus:ring-2 focus:ring-emerald-500 focus:outline-none text-base placeholder-gray-400"
           placeholder="e.g. Amazon says it will be net-zero by 2040"
           value={claim}
           onChange={(e) => setClaim(e.target.value)}
         />
         <button
-          type="submit"
-          className="bg-emerald-600 text-white px-6 py-2 rounded-lg shadow hover:bg-emerald-700 transition text-sm font-medium"
-        >
-          Submit Claim
-        </button>
+  type="submit"
+  className="absolute bottom-3 right-3 bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-full shadow-md transition"
+  aria-label="Submit"
+>
+  <HiArrowUpCircle className="w-6 h-6" />
+</button>
+
       </form>
     </div>
   ) : (
-    <div className="max-w-2xl space-y-8">
+    <div className="max-w-2xl space-y-8 mx-auto">
       {/* User Message */}
-      <div className="flex gap-4">
-        <div className="bg-emerald-100 text-emerald-700 font-bold rounded-full h-9 w-9 flex items-center justify-center">
-          🧑
-        </div>
-        <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 shadow-sm text-sm leading-relaxed">
-          {claim}
-        </div>
-      </div>
+<div className="flex items-start gap-4">
+  <div className="text-emerald-700">
+    <FaUserCircle className="w-8 h-8" />
+  </div>
+  <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 shadow-sm text-sm leading-relaxed max-w-full">
+    {claim}
+  </div>
+</div>
 
-      {/* Loading Message */}
-      {loading && !report && (
-        <div className="flex gap-4">
-          <div className="bg-emerald-600 text-white font-bold rounded-full h-9 w-9 flex items-center justify-center">
-            🤖
-          </div>
-          <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 shadow-sm text-sm">
-            <span className="animate-pulse text-gray-700">
-              Analyzing claim...
-            </span>
-          </div>
-        </div>
-      )}
+{/* Bot Message */}
+<div className="flex items-start gap-4">
+  <div className="text-white bg-emerald-600 p-1.5 rounded-full">
+    <FaRobot className="w-6 h-6" />
+  </div>
+  <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 shadow-sm text-sm">
+    {loading ? (
+      <span className="animate-pulse text-gray-700">Analyzing claim...</span>
+    ) : (
+      <p className="text-md font-bold">Report Generated</p>
+    )}
+  </div>
+</div>
 
-      {/* Report */}
+
+      {/* Report Display */}
       {report && (
-        <div className="flex gap-4">
-          <div className="bg-emerald-600 text-white font-bold rounded-full h-9 w-9 flex items-center justify-center">
-            🤖
-          </div>
-          <div className="bg-white border border-gray-200 rounded-xl px-5 py-6 shadow-sm space-y-6 text-sm">
+        <div className="flex items-start gap-4">
+
+          <div className="bg-white border border-gray-200 rounded-xl px-6 py-6 shadow space-y-6 text-sm w-full">
             <div>
-              <p className="text-xs uppercase font-bold text-gray-500 mb-1">
-                Rephrased Claim
-              </p>
+              <p className="text-xs uppercase font-semibold text-gray-500 mb-1">Rephrased Claim</p>
               <p>{report.restated_claim}</p>
             </div>
             <div>
-              <p className="text-xs uppercase font-bold text-gray-500 mb-1">
-                Verdict
-              </p>
+              <p className="text-xs uppercase font-semibold text-gray-500 mb-1">Verdict</p>
               <p className="font-medium">{report.verdict}</p>
             </div>
             <div>
-              <p className="text-xs uppercase font-bold text-gray-500 mb-1">
-                Explanation
-              </p>
+              <p className="text-xs uppercase font-semibold text-gray-500 mb-1">Explanation</p>
               <p>{report.explanation}</p>
             </div>
             <div>
-              <p className="text-xs uppercase font-bold text-gray-500 mb-1">
-                Sources
-              </p>
-              <ol className="list-decimal list-inside space-y-3">
+              <p className="text-xs uppercase font-semibold text-gray-500 mb-1">Sources</p>
+              <ol className="list-decimal list-inside space-y-4">
                 {report.sources.map((source, idx) => (
                   <li key={idx}>
                     <a
@@ -471,7 +482,7 @@ export default function Home() {
               onClick={downloadPDF}
               className="inline-flex items-center gap-2 bg-gray-100 border border-gray-300 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-md text-xs font-medium transition"
             >
-              <DownloadIcon /> Download PDF
+              Download PDF
             </button>
           </div>
         </div>
@@ -479,6 +490,8 @@ export default function Home() {
     </div>
   )}
 </main>
+
+
 
     </div>
   );
