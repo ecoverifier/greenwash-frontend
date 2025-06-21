@@ -5,6 +5,10 @@ import { PaperPlaneIcon, DownloadIcon } from "@radix-ui/react-icons";
 import jsPDF from "jspdf";
 import { FaUserCircle, FaRobot, FaPlus, FaTrashAlt } from "react-icons/fa";
 import { HiArrowUpCircle } from "react-icons/hi2";
+import { RiChatNewLine } from "react-icons/ri";
+import { FiLogIn, FiLogOut } from "react-icons/fi";
+
+
 
 
 import { auth, provider, db, signInWithPopup, signOut } from "./firebase";
@@ -266,9 +270,10 @@ export default function Home() {
   return (
     <div className="flex min-h-screen bg-[#f7f9fb] text-gray-900 font-sans">
       {/* Sidebar */}
-      <aside className="w-72 bg-white border-r border-gray-200 px-6 py-6 shadow-md">
-  <h2 className="text-xl font-semibold text-emerald-700 mb-6 tracking-tight">
-    Your Reports
+      <aside className="w-65 bg-white border-r border-gray-200 px-6 py-6 shadow-md rounded-md">
+      <div className="flex items-center justify-between mb-6">
+  <h2 className="text-lg font-bold text-emerald-700 tracking-tight">
+    Reports
   </h2>
 
   {/* New Claim Button */}
@@ -279,11 +284,14 @@ export default function Home() {
       setActiveReportId(null);
       setSessionStarted(false);
     }}
-    className="flex items-center gap-2 mb-6 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition"
+    className="flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition"
+    title="New Claim"
   >
-    <FaPlus className="w-4 h-4" />
-    New Claim
+    <RiChatNewLine className="w-5 h-5" />
   </button>
+</div>
+
+
 
   {/* Report List */}
   <div className="space-y-4">
@@ -365,15 +373,17 @@ export default function Home() {
     {user ? (
       <button
         onClick={handleLogout}
-        className="text-sm text-red-600 hover:underline font-medium"
+        className="inline-flex items-center gap-2 text-sm font-medium text-red-500 hover:text-red-600 border border-red-100 hover:border-red-300 px-3 py-1.5 rounded-md transition-all shadow-sm hover:shadow-md"
       >
+        <FiLogOut className="w-4 h-4" />
         Logout
       </button>
     ) : (
       <button
         onClick={login}
-        className="text-sm text-emerald-700 hover:underline font-medium"
+        className="inline-flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 border border-emerald-100 hover:border-emerald-300 px-3 py-1.5 rounded-md transition-all shadow-sm hover:shadow-md"
       >
+        <FiLogIn className="w-4 h-4" />
         Login with Google
       </button>
     )}
