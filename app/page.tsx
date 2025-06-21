@@ -1,10 +1,23 @@
+
 "use client";
+import { auth, provider, db, signInWithPopup, signOut } from "./firebase";
+import { onAuthStateChanged, User } from "firebase/auth";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  deleteDoc,
+  doc,
+  query,
+  where,
+  orderBy
+} from "firebase/firestore";
+
 
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { PaperPlaneIcon, DownloadIcon } from "@radix-ui/react-icons";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 
 type ReportType = {
   restated_claim: string;
@@ -26,11 +39,24 @@ export default function Home() {
   const [error, setError] = useState("");
   const [sampleIndex, setSampleIndex] = useState(0);
   const [charIndex, setCharIndex] = useState(0);
-  const samples = [
-    "e.g., Google says its data centers are 100% sustainable",
-    "e.g., Amazon claims to reach net-zero by 2040",
-    "e.g., Tesla says all vehicles are carbon neutral"
-  ];
+  const [user, setUser] = useState<User | null>(null);
+const [reports, setReports] = useState<any[]>([]);
+const [activeReportId, setActiveReportId] = useState<string | null>(null);
+const samples = [
+  "e.g., Google says its data centers are 100% sustainable",
+  "e.g., Amazon claims to reach net-zero by 2040",
+  "e.g., Tesla says all vehicles are carbon neutral"
+];
+
+// Auth state tracking
+useEffect(() => {
+  onAuthStateChanged(auth, (u) => {
+    setUser(u);
+    if (u) fetchReports(u.uid);
+  });
+}, []);
+
+  
 
   useEffect(() => {
     const currentSample = samples[sampleIndex];
@@ -47,28 +73,49 @@ export default function Home() {
       return () => clearTimeout(nextTimeout);
     }
   }, [charIndex, sampleIndex]);
+  const fetchReports = async (uid: string) => {
+    const q = query(collection(db, "reports"), where("uid", "==", uid), orderBy("createdAt", "desc"));
+    const querySnapshot = await getDocs(q);
+    const data = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    setReports(data);
+  };
+  
+  
 
+  
+  
   const submit = async (e?: any) => {
     if (e) e.preventDefault();
-    if (!claim.trim()) return;
-
+    if (!claim.trim() || !user) return;
+  
     setLoading(true);
     setError("");
     setReport(null);
-
+  
     try {
       const res = await axios.post(
         "https://greenwash-api-production.up.railway.app/check",
         { claim }
       );
       if (res.data.error) throw new Error(res.data.error);
+  
+      const docRef = await addDoc(collection(db, "reports"), {
+        uid: user.uid,
+        claim,
+        report: res.data,
+        createdAt: new Date().toISOString()
+      });
+  
       setReport(res.data);
-    } catch (err: any) {
+      fetchReports(user.uid); // refresh sidebar
+      setActiveReportId(docRef.id);
+    } catch (err) {
       setError("Something went wrong. Please try again.");
     }
-
+  
     setLoading(false);
   };
+  
 
   const downloadPDF = () => {
     if (!report) return;
@@ -135,16 +182,69 @@ export default function Home() {
     // Save
     doc.save("greenwatch_report.pdf");
   };
-  
 
   return (
-    <main className="min-h-screen bg-[#f7f9fb] text-gray-900 font-sans px-6 py-12 md:px-10">
-      <header className="flex items-center justify-between max-w-5xl mx-auto mb-12">
-        <div className="flex items-center space-x-4">
-          <img src="favicon.ico" alt="Logo" className="h-10 w-10" />
-          <h1 className="text-2xl font-semibold text-emerald-600 tracking-tight">EcoVerifier</h1>
+    
+<main className="min-h-screen bg-[#f7f9fb] text-gray-900 font-sans px-6 py-12 md:pl-[17rem]">
+      <header className="flex justify-between px-6 py-4 bg-white shadow items-center">
+        <div className="flex items-center space-x-2">
+          <img src="favicon.ico" className="w-8 h-8" />
+          <span className="text-xl font-bold text-emerald-600">EcoVerifier</span>
+        </div>
+        <div>
+          {user ? (
+            <button onClick={() => signOut(auth)} className="text-sm text-red-500 hover:underline">
+              Logout
+            </button>
+          ) : (
+            <button onClick={() => signInWithPopup(auth, provider)} className="text-sm text-emerald-600 hover:underline">
+              Login with Google
+            </button>
+          )}
         </div>
       </header>
+      {user && (
+  <aside className="fixed top-20 left-0 w-64 h-full bg-white border-r overflow-y-auto shadow-sm p-4 space-y-3">
+    <h2 className="text-lg font-bold text-emerald-700 mb-3">Your Reports</h2>
+    <button
+      onClick={() => {
+        setReport(null);
+        setClaim("");
+        setActiveReportId(null);
+      }}
+      className="w-full text-left text-emerald-500 hover:underline text-sm mb-2"
+    >
+      + New Claim
+    </button>
+    {reports.map((r) => (
+      <div
+        key={r.id}
+        onClick={() => {
+          setReport(r.report);
+          setClaim(r.claim);
+          setActiveReportId(r.id);
+        }}
+        className={`cursor-pointer text-sm p-2 rounded hover:bg-gray-100 ${
+          r.id === activeReportId ? "bg-gray-200" : ""
+        }`}
+      >
+        {r.claim.slice(0, 40)}...
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            deleteDoc(doc(db, "reports", r.id));
+            fetchReports(user.uid);
+            if (activeReportId === r.id) setReport(null);
+          }}
+          className="ml-2 text-red-500 hover:text-red-700 text-xs"
+        >
+          ✕
+        </button>
+      </div>
+    ))}
+  </aside>
+)}
+
 
       <div className="max-w-2xl mx-auto text-center mb-8">
         <p className="text-lg text-gray-700 leading-relaxed">
