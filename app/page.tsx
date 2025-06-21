@@ -31,12 +31,35 @@ type ReportType = {
 };
 
 export default function Home() {
+  const [sessionStarted, setSessionStarted] = useState(false);
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setUser(null);
+      setReport(null);
+      setClaim("");
+      setSessionStarted(false);
+      setActiveReportId(null);
+    } catch (err) {
+      console.error("Logout failed", err);
+      setError("Logout failed. Please try again.");
+    }
+  };
+  
+
   const [claim, setClaim] = useState("");
   const [report, setReport] = useState<ReportType | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [user, setUser] = useState<User | null>(null);
-  const [reports, setReports] = useState<any[]>([]);
+  const [reports, setReports] = useState<any[]>(() => {
+    // Load from localStorage for anonymous users
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("anon_reports");
+      return stored ? JSON.parse(stored) : [];
+    }
+    return [];
+  });
   const [activeReportId, setActiveReportId] = useState<string | null>(null);
   const [sampleIndex, setSampleIndex] = useState(0);
   const [charIndex, setCharIndex] = useState(0);
@@ -50,9 +73,10 @@ export default function Home() {
   useEffect(() => {
     onAuthStateChanged(auth, (u) => {
       setUser(u);
-      if (u) fetchReports(u.uid);
+      fetchReports(u?.uid); // ⬅️ Works for both cases now
     });
   }, []);
+  
 
   useEffect(() => {
     const currentSample = samples[sampleIndex];
@@ -79,56 +103,90 @@ export default function Home() {
     }
   };
 
-  const fetchReports = async (uid: string) => {
-    const q = query(
-      collection(db, "reports"),
-      where("uid", "==", uid),
-      orderBy("createdAt", "desc")
-    );
-    const snapshot = await getDocs(q);
-    const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    setReports(data);
+  const fetchReports = async (uid?: string) => {
+    if (uid) {
+      const q = query(
+        collection(db, "reports"),
+        where("uid", "==", uid),
+        orderBy("createdAt", "desc")
+      );
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setReports(data);
+    } else {
+      const stored = localStorage.getItem("anon_reports");
+      setReports(stored ? JSON.parse(stored) : []);
+    }
   };
+  
 
   const submit = async (e?: any) => {
     if (e) e.preventDefault();
     if (!claim.trim()) return;
-    if (!user) {
-      setError("Please log in to submit a claim.");
-      return;
-    }
   
     setLoading(true);
     setError("");
     setReport(null);
+    setSessionStarted(true);
+  
+    const tempId = `temp-${Date.now()}`;
+    const tempReport = { id: tempId, claim, report: null, loading: true };
+    setReports((prev) => [tempReport, ...prev]);
+    setActiveReportId(tempId);
+  
+    if (!user) {
+      localStorage.setItem(
+        "anon_reports",
+        JSON.stringify([{ ...tempReport }, ...reports])
+      );
+    }
   
     try {
       const res = await axios.post(
         "https://greenwash-api-production.up.railway.app/check",
         { claim }
       );
-  
-      console.log("API response:", res.data); // 👈 ADD THIS
-  
       if (res.data.error) throw new Error(res.data.error);
   
-      const docRef = await addDoc(collection(db, "reports"), {
-        uid: user.uid,
-        claim,
-        report: res.data,
-        createdAt: new Date().toISOString(),
-      });
+      if (user) {
+        const docRef = await addDoc(collection(db, "reports"), {
+          uid: user.uid,
+          claim,
+          report: res.data,
+          createdAt: new Date().toISOString(),
+        });
+        setActiveReportId(docRef.id);
+      }
   
       setReport(res.data);
-      fetchReports(user.uid);
-      setActiveReportId(docRef.id);
+      setReports((prev) =>
+        prev.map((r) =>
+          r.id === tempId ? { ...r, report: res.data, loading: false } : r
+        )
+      );
+  
+      if (!user) {
+        const updated = reports.map((r) =>
+          r.id === tempId ? { ...r, report: res.data, loading: false } : r
+        );
+        localStorage.setItem("anon_reports", JSON.stringify(updated));
+      }
     } catch (err: any) {
-      console.error("Claim submit failed:", err.message); // 👈 ADD THIS
+      console.error("Claim submit failed:", err.message);
       setError("Something went wrong. Please try again.");
+      setReports((prev) => prev.filter((r) => r.id !== tempId));
+      if (!user) {
+        localStorage.setItem(
+          "anon_reports",
+          JSON.stringify(reports.filter((r) => r.id !== tempId))
+        );
+      }
     }
   
     setLoading(false);
   };
+  
+  
   
 
   const downloadPDF = () => {
@@ -203,205 +261,227 @@ export default function Home() {
   };
 
   return (
-    <div className="flex min-h-screen text-gray-900 bg-[#f7f9fb]">
-      {user && (
-        <aside className="w-64 bg-white border-r p-4 overflow-y-auto">
-          <h2 className="text-lg font-bold text-emerald-700 mb-3">
-            Your Reports
-          </h2>
-          <button
-            onClick={() => {
-              setReport(null);
-              setClaim("");
-              setActiveReportId(null);
-            }}
-            className="w-full text-left text-emerald-500 hover:underline text-sm mb-4"
-          >
-            + New Claim
-          </button>
-          {reports.map((r) => (
-            <div
-              key={r.id}
-              onClick={() => {
-                setReport(r.report);
-                setClaim(r.claim);
-                setActiveReportId(r.id);
-              }}
-              className={`cursor-pointer text-sm p-2 rounded hover:bg-gray-100 ${
-                r.id === activeReportId ? "bg-gray-200" : ""
-              }`}
-            >
-              {r.claim.slice(0, 40)}...
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  deleteDoc(doc(db, "reports", r.id));
-                  fetchReports(user.uid);
-                  if (activeReportId === r.id) setReport(null);
-                }}
-                className="ml-2 text-red-500 hover:text-red-700 text-xs"
-              >
-                ✕
-              </button>
-            </div>
-          ))}
-        </aside>
-      )}
+    <div className="flex min-h-screen bg-[#f7f9fb] text-gray-900 font-sans">
+      {/* Sidebar */}
+      <aside className="w-72 bg-white border-r border-gray-200 px-6 py-6 shadow-sm">
+  <h2 className="text-xl font-semibold text-emerald-700 mb-4">
+    Your Reports
+  </h2>
+  <button
+    onClick={() => {
+      setReport(null);
+      setClaim("");
+      setActiveReportId(null);
+      setSessionStarted(false);
+    }}
+    className="block mb-6 text-sm font-medium text-emerald-500 hover:underline"
+  >
+    + New Claim
+  </button>
+  <div className="space-y-3">
+    {reports.map((r) => (
+      <div
+        key={r.id}
+        onClick={() => {
+          setReport(r.report);
+          setClaim(r.claim);
+          setActiveReportId(r.id);
+          setSessionStarted(true);
+        }}
+        className={`relative group p-4 rounded-lg border text-sm cursor-pointer transition-all ${
+          r.id === activeReportId
+            ? "bg-emerald-50 border-emerald-200"
+            : "bg-white hover:bg-gray-50 border-gray-200"
+        }`}
+      >
+        <span className="block pr-6 text-gray-800 font-medium truncate">
+          {r.claim}
+        </span>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setReports((prev) => {
+              const updatedReports = prev.filter((rep) => rep.id !== r.id);
+              if (activeReportId === r.id) {
+                if (updatedReports.length > 0) {
+                  const nextActive = updatedReports[0];
+                  setReport(nextActive.report);
+                  setClaim(nextActive.claim);
+                  setActiveReportId(nextActive.id);
+                  setSessionStarted(true);
+                } else {
+                  setReport(null);
+                  setClaim("");
+                  setActiveReportId(null);
+                  setSessionStarted(false);
+                }
+              }
+              if (!user) {
+                localStorage.setItem(
+                  "anon_reports",
+                  JSON.stringify(updatedReports)
+                );
+              }
+              return updatedReports;
+            });
+            if (user) {
+              deleteDoc(doc(db, "reports", r.id));
+            }
+          }}
+          className="absolute top-2 right-2 text-red-400 hover:text-red-600 text-xs"
+        >
+          ✕
+        </button>
+      </div>
+    ))}
+  </div>
+</aside>
 
-      <main className="flex-1 px-6 py-10">
-        <header className="flex justify-between items-center mb-8">
-          <div className="flex items-center space-x-2">
-            <img src="favicon.ico" className="w-8 h-8" />
-            <span className="text-xl font-bold text-emerald-600">
-              EcoVerifier
+  
+<main className="flex-1 px-8 py-12 transition-all duration-300">
+  <div className="flex justify-between items-center mb-10">
+    <div className="flex items-center gap-3">
+      <img src="favicon.ico" alt="EcoVerifier Logo" className="w-9 h-9" />
+      <span className="text-2xl font-bold text-emerald-600 tracking-tight">
+        EcoVerifier
+      </span>
+    </div>
+
+    {user ? (
+      <button
+        onClick={handleLogout}
+        className="text-sm text-red-500 hover:underline"
+      >
+        Logout
+      </button>
+    ) : (
+      <button
+        onClick={login}
+        className="text-sm text-emerald-600 hover:underline"
+      >
+        Login with Google
+      </button>
+    )}
+  </div>
+
+  {/* Conditional content: form vs chat layout */}
+  {!sessionStarted ? (
+    <div className="w-full max-w-xl mx-auto text-center space-y-10">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold text-emerald-700">EcoVerifier</h1>
+        <p className="text-gray-600 text-base">
+          Enter a sustainability claim to begin.
+        </p>
+      </div>
+
+      <form onSubmit={submit} className="space-y-4">
+        <textarea
+          rows={4}
+          className="w-full p-4 border border-gray-300 rounded-lg shadow-sm resize-none focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm"
+          placeholder="e.g. Amazon says it will be net-zero by 2040"
+          value={claim}
+          onChange={(e) => setClaim(e.target.value)}
+        />
+        <button
+          type="submit"
+          className="bg-emerald-600 text-white px-6 py-2 rounded-lg shadow hover:bg-emerald-700 transition text-sm font-medium"
+        >
+          Submit Claim
+        </button>
+      </form>
+    </div>
+  ) : (
+    <div className="max-w-2xl space-y-8">
+      {/* User Message */}
+      <div className="flex gap-4">
+        <div className="bg-emerald-100 text-emerald-700 font-bold rounded-full h-9 w-9 flex items-center justify-center">
+          🧑
+        </div>
+        <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 shadow-sm text-sm leading-relaxed">
+          {claim}
+        </div>
+      </div>
+
+      {/* Loading Message */}
+      {loading && !report && (
+        <div className="flex gap-4">
+          <div className="bg-emerald-600 text-white font-bold rounded-full h-9 w-9 flex items-center justify-center">
+            🤖
+          </div>
+          <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 shadow-sm text-sm">
+            <span className="animate-pulse text-gray-700">
+              Analyzing claim...
             </span>
           </div>
-          {user ? (
-            <button
-              onClick={() => signOut(auth)}
-              className="text-sm text-red-500 hover:underline"
-            >
-              Logout
-            </button>
-          ) : (
-            <button
-              onClick={login}
-              className="text-sm text-emerald-600 hover:underline"
-            >
-              Login with Google
-            </button>
-          )}
-        </header>
-
-        <div className="max-w-2xl mx-auto text-center mb-8">
-          <p className="text-lg text-gray-700 leading-relaxed">
-            Enter a sustainability claim. We'll analyze it using real-world
-            evidence.
-          </p>
         </div>
+      )}
 
-        <form
-          onSubmit={submit}
-          className="max-w-2xl mx-auto relative bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm"
-        >
-          <textarea
-            rows={3}
-            className="w-full resize-none p-5 pr-14 text-base text-gray-800 bg-white focus:outline-none font-medium placeholder-gray-400"
-            placeholder={`${samples[sampleIndex].slice(
-              0,
-              charIndex
-            )}${charIndex < samples[sampleIndex].length ? "|" : ""}`}
-            value={claim}
-            onChange={(e) => setClaim(e.target.value)}
-          />
-          <button
-            type="submit"
-            className="absolute bottom-4 right-4 bg-emerald-500 text-white p-2 rounded-full shadow-md hover:bg-emerald-600 active:scale-95 transition"
-            disabled={loading}
-          >
-            {loading ? (
-              <svg
-                className="animate-spin h-5 w-5 text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8v8H4z"
-                />
-              </svg>
-            ) : (
-              <PaperPlaneIcon className="h-5 w-5" />
-            )}
-          </button>
-        </form>
-
-        {loading && (
-          <div className="max-w-2xl mx-auto text-center mt-4 text-sm text-gray-500">
-            Analyzing claim...
+      {/* Report */}
+      {report && (
+        <div className="flex gap-4">
+          <div className="bg-emerald-600 text-white font-bold rounded-full h-9 w-9 flex items-center justify-center">
+            🤖
           </div>
-        )}
-
-        {error && (
-          <div className="max-w-2xl mx-auto mt-5 bg-red-100 border border-red-300 text-red-700 rounded-lg p-4 text-sm">
-            {error}
-          </div>
-        )}
-
-        {report && (
-          <div className="max-w-3xl mx-auto mt-12 px-4 py-6 bg-white rounded-2xl shadow-lg border border-gray-200">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-emerald-700">Report</h2>
-              <button
-                onClick={downloadPDF}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-md transition"
-              >
-                <DownloadIcon className="h-4 w-4" /> Download PDF
-              </button>
+          <div className="bg-white border border-gray-200 rounded-xl px-5 py-6 shadow-sm space-y-6 text-sm">
+            <div>
+              <p className="text-xs uppercase font-bold text-gray-500 mb-1">
+                Rephrased Claim
+              </p>
+              <p>{report.restated_claim}</p>
             </div>
-
-            <section className="space-y-6 text-gray-800 leading-relaxed text-[15px]">
-              <div>
-                <h3 className="text-lg font-semibold text-emerald-600 mb-2">
-                  Restated Claim
-                </h3>
-                <p>{report.restated_claim}</p>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold text-emerald-600 mb-2">
-                  Evaluation
-                </h3>
-                <p className="text-base font-medium text-gray-900 mb-1">
-                  {report.verdict}
-                </p>
-                <p>{report.explanation}</p>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold text-emerald-600 mb-2">
-                  Sources
-                </h3>
-                <ol className="list-decimal list-inside space-y-4">
-                  {report.sources.map((source, idx) => (
-                    <li key={idx}>
-                      <p className="font-semibold text-emerald-700">
-                        <a
-                          href={source.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hover:underline"
-                        >
-                          {source.title}
-                        </a>
-                      </p>
-                      <p className="text-sm text-gray-700 mb-1">
-                        {source.summary}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        <strong>Strengths:</strong> {source.strengths}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        <strong>Limitations:</strong> {source.limitations}
-                      </p>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            </section>
+            <div>
+              <p className="text-xs uppercase font-bold text-gray-500 mb-1">
+                Verdict
+              </p>
+              <p className="font-medium">{report.verdict}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase font-bold text-gray-500 mb-1">
+                Explanation
+              </p>
+              <p>{report.explanation}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase font-bold text-gray-500 mb-1">
+                Sources
+              </p>
+              <ol className="list-decimal list-inside space-y-3">
+                {report.sources.map((source, idx) => (
+                  <li key={idx}>
+                    <a
+                      href={source.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-emerald-600 hover:underline"
+                    >
+                      {source.title}
+                    </a>
+                    <p className="text-gray-700">{source.summary}</p>
+                    <p>
+                      <strong>Strengths:</strong> {source.strengths}
+                    </p>
+                    <p>
+                      <strong>Limitations:</strong> {source.limitations}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            </div>
+            <button
+              onClick={downloadPDF}
+              className="inline-flex items-center gap-2 bg-gray-100 border border-gray-300 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-md text-xs font-medium transition"
+            >
+              <DownloadIcon /> Download PDF
+            </button>
           </div>
-        )}
-      </main>
+        </div>
+      )}
+    </div>
+  )}
+</main>
+
     </div>
   );
+  
+  
 }
