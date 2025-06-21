@@ -371,7 +371,7 @@ const downloadPDF = () => {
   
 
 
-<main className="flex-1 px-6 py-10 sm:px-10 bg-gray-50 transition-all duration-300 min-h-screen">
+<main className="flex-1 px-6 py-5 sm:px-10 bg-gray-50 transition-all duration-300 min-h-screen">
   {/* Header */}
   <div className="flex justify-between items-center mb-12">
     <div className="flex items-center gap-3">
