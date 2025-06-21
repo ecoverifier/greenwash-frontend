@@ -38,234 +38,245 @@ type ReportType = {
 };
 
 export default function Home() {
-  const [sessionStarted, setSessionStarted] = useState(false);
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      setUser(null);
-      setReport(null);
-      setClaim("");
-      setSessionStarted(false);
-      setActiveReportId(null);
-    } catch (err) {
-      console.error("Logout failed", err);
-      setError("Logout failed. Please try again.");
-    }
-  };
-  
+  // 🔒 Auth state and logout
+const [sessionStarted, setSessionStarted] = useState(false);
+const [user, setUser] = useState<User | null>(null);
+const [error, setError] = useState("");
 
-  const [claim, setClaim] = useState("");
-  const [report, setReport] = useState<ReportType | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [user, setUser] = useState<User | null>(null);
-  const [reports, setReports] = useState<any[]>(() => {
-    // Load from localStorage for anonymous users
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("anon_reports");
-      return stored ? JSON.parse(stored) : [];
-    }
-    return [];
-  });
-  const [activeReportId, setActiveReportId] = useState<string | null>(null);
-  const [sampleIndex, setSampleIndex] = useState(0);
-  const [charIndex, setCharIndex] = useState(0);
-
-  const samples = [
-    "e.g., Google says its data centers are 100% sustainable",
-    "e.g., Amazon claims to reach net-zero by 2040",
-    "e.g., Tesla says all vehicles are carbon neutral",
-  ];
-
-  useEffect(() => {
-    onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      fetchReports(u?.uid); // ⬅️ Works for both cases now
-    });
-  }, []);
-  
-
-  useEffect(() => {
-    const currentSample = samples[sampleIndex];
-    if (charIndex < currentSample.length) {
-      const timeout = setTimeout(() => {
-        setCharIndex((prev) => prev + 1);
-      }, 30);
-      return () => clearTimeout(timeout);
-    } else {
-      const nextTimeout = setTimeout(() => {
-        setSampleIndex((prev) => (prev + 1) % samples.length);
-        setCharIndex(0);
-      }, 2000);
-      return () => clearTimeout(nextTimeout);
-    }
-  }, [charIndex, sampleIndex]);
-
-  const login = async () => {
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (err) {
-      console.error("Login failed", err);
-      setError("Login failed. Please try again.");
-    }
-  };
-
-  const fetchReports = async (uid?: string) => {
-    if (uid) {
-      const q = query(
-        collection(db, "reports"),
-        where("uid", "==", uid),
-        orderBy("createdAt", "desc")
-      );
-      const snapshot = await getDocs(q);
-      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setReports(data);
-    } else {
-      const stored = localStorage.getItem("anon_reports");
-      setReports(stored ? JSON.parse(stored) : []);
-    }
-  };
-  
-
-  const submit = async (e?: any) => {
-    if (e) e.preventDefault();
-    if (!claim.trim()) return;
-  
-    setLoading(true);
-    setError("");
+const handleLogout = async () => {
+  try {
+    await signOut(auth);
+    setUser(null);
     setReport(null);
-    setSessionStarted(true);
-  
-    const tempId = `temp-${Date.now()}`;
-    const tempReport = { id: tempId, claim, report: null, loading: true };
-    setReports((prev) => [tempReport, ...prev]);
-    setActiveReportId(tempId);
-  
+    setClaim("");
+    setSessionStarted(false);
+    setActiveReportId(null);
+  } catch (err) {
+    console.error("Logout failed", err);
+    setError("Logout failed. Please try again.");
+  }
+};
+
+// ✅ Placeholder typing animation (cleaned and simplified)
+const examples = [
+  "e.g. Amazon says it will be net-zero by 2040",
+  "e.g. Apple will stop using plastic packaging",
+  "e.g. Shell claims 50% carbon reduction by 2035",
+];
+
+const [animatedPlaceholder, setAnimatedPlaceholder] = useState("");
+const [exampleIndex, setExampleIndex] = useState(0);
+const [charIndex, setCharIndex] = useState(0);
+const [isDeleting, setIsDeleting] = useState(false);
+const [claim, setClaim] = useState("");
+
+useEffect(() => {
+  const current = examples[exampleIndex];
+  let speed = isDeleting ? 25 : 60;
+
+  const timeout = setTimeout(() => {
+    if (isDeleting) {
+      setAnimatedPlaceholder((prev) => prev.slice(0, -1));
+      setCharIndex((prev) => prev - 1);
+      if (charIndex === 0) {
+        setIsDeleting(false);
+        setExampleIndex((prev) => (prev + 1) % examples.length);
+      }
+    } else {
+      setAnimatedPlaceholder(current.slice(0, charIndex + 1));
+      setCharIndex((prev) => prev + 1);
+      if (charIndex === current.length) {
+        setIsDeleting(true);
+      }
+    }
+  }, speed);
+
+  return () => clearTimeout(timeout);
+}, [charIndex, isDeleting, exampleIndex]);
+
+// 📦 Report data
+const [report, setReport] = useState<ReportType | null>(null);
+const [loading, setLoading] = useState(false);
+const [reports, setReports] = useState<any[]>(() => {
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("anon_reports");
+    return stored ? JSON.parse(stored) : [];
+  }
+  return [];
+});
+const [activeReportId, setActiveReportId] = useState<string | null>(null);
+
+// 🔑 Auth state change listener
+useEffect(() => {
+  onAuthStateChanged(auth, (u) => {
+    setUser(u);
+    fetchReports(u?.uid);
+  });
+}, []);
+
+// 🔍 Fetch user or local reports
+const fetchReports = async (uid?: string) => {
+  if (uid) {
+    const q = query(
+      collection(db, "reports"),
+      where("uid", "==", uid),
+      orderBy("createdAt", "desc")
+    );
+    const snapshot = await getDocs(q);
+    const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    setReports(data);
+  } else {
+    const stored = localStorage.getItem("anon_reports");
+    setReports(stored ? JSON.parse(stored) : []);
+  }
+};
+
+// 🔐 Login
+const login = async () => {
+  try {
+    await signInWithPopup(auth, provider);
+  } catch (err) {
+    console.error("Login failed", err);
+    setError("Login failed. Please try again.");
+  }
+};
+
+// 🚀 Submit a claim
+const submit = async (e?: any) => {
+  if (e) e.preventDefault();
+  if (!claim.trim()) return;
+
+  setLoading(true);
+  setError("");
+  setReport(null);
+  setSessionStarted(true);
+
+  const tempId = `temp-${Date.now()}`;
+  const tempReport = { id: tempId, claim, report: null, loading: true };
+  setReports((prev) => [tempReport, ...prev]);
+  setActiveReportId(tempId);
+
+  if (!user) {
+    localStorage.setItem(
+      "anon_reports",
+      JSON.stringify([{ ...tempReport }, ...reports])
+    );
+  }
+
+  try {
+    const res = await axios.post(
+      "https://greenwash-api-production.up.railway.app/check",
+      { claim }
+    );
+    if (res.data.error) throw new Error(res.data.error);
+
+    if (user) {
+      const docRef = await addDoc(collection(db, "reports"), {
+        uid: user.uid,
+        claim,
+        report: res.data,
+        createdAt: new Date().toISOString(),
+      });
+      setActiveReportId(docRef.id);
+    }
+
+    setReport(res.data);
+    setReports((prev) =>
+      prev.map((r) =>
+        r.id === tempId ? { ...r, report: res.data, loading: false } : r
+      )
+    );
+
+    if (!user) {
+      const updated = reports.map((r) =>
+        r.id === tempId ? { ...r, report: res.data, loading: false } : r
+      );
+      localStorage.setItem("anon_reports", JSON.stringify(updated));
+    }
+  } catch (err: any) {
+    console.error("Claim submit failed:", err.message);
+    setError("Something went wrong. Please try again.");
+    setReports((prev) => prev.filter((r) => r.id !== tempId));
     if (!user) {
       localStorage.setItem(
         "anon_reports",
-        JSON.stringify([{ ...tempReport }, ...reports])
+        JSON.stringify(reports.filter((r) => r.id !== tempId))
       );
     }
-  
-    try {
-      const res = await axios.post(
-        "https://greenwash-api-production.up.railway.app/check",
-        { claim }
-      );
-      if (res.data.error) throw new Error(res.data.error);
-  
-      if (user) {
-        const docRef = await addDoc(collection(db, "reports"), {
-          uid: user.uid,
-          claim,
-          report: res.data,
-          createdAt: new Date().toISOString(),
-        });
-        setActiveReportId(docRef.id);
-      }
-  
-      setReport(res.data);
-      setReports((prev) =>
-        prev.map((r) =>
-          r.id === tempId ? { ...r, report: res.data, loading: false } : r
-        )
-      );
-  
-      if (!user) {
-        const updated = reports.map((r) =>
-          r.id === tempId ? { ...r, report: res.data, loading: false } : r
-        );
-        localStorage.setItem("anon_reports", JSON.stringify(updated));
-      }
-    } catch (err: any) {
-      console.error("Claim submit failed:", err.message);
-      setError("Something went wrong. Please try again.");
-      setReports((prev) => prev.filter((r) => r.id !== tempId));
-      if (!user) {
-        localStorage.setItem(
-          "anon_reports",
-          JSON.stringify(reports.filter((r) => r.id !== tempId))
-        );
-      }
+  }
+
+  setLoading(false);
+};
+
+// 🧾 PDF download
+const downloadPDF = () => {
+  if (!report) return;
+
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  let y = 20;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.setTextColor(40, 167, 69);
+  doc.text("EcoVerifier Sustainability Report", pageWidth / 2, y, {
+    align: "center",
+  });
+  y += 15;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(12);
+  doc.setTextColor(33, 37, 41);
+  doc.text("Restated Claim:", 14, y);
+  y += 7;
+  const restatedClaimLines = doc.splitTextToSize(report.restated_claim, 180);
+  doc.text(restatedClaimLines, 14, y);
+  y += restatedClaimLines.length * 7 + 5;
+
+  doc.text("Evaluation:", 14, y);
+  y += 7;
+  doc.text(`Verdict: ${report.verdict}`, 14, y);
+  y += 7;
+  const explanationLines = doc.splitTextToSize(report.explanation, 180);
+  doc.text(explanationLines, 14, y);
+  y += explanationLines.length * 7 + 5;
+
+  doc.text("Sources:", 14, y);
+  y += 8;
+
+  report.sources.forEach((source, index) => {
+    if (y > 270) {
+      doc.addPage();
+      y = 20;
     }
-  
-    setLoading(false);
-  };
-  
-  
-  
-
-  const downloadPDF = () => {
-    if (!report) return;
-
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    let y = 20;
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(18);
-    doc.setTextColor(40, 167, 69);
-    doc.text("EcoVerifier Sustainability Report", pageWidth / 2, y, {
-      align: "center",
-    });
-    y += 15;
+    doc.text(`${index + 1}. ${source.title}`, 14, y);
+    y += 6;
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(12);
-    doc.setTextColor(33, 37, 41);
-    doc.text("Restated Claim:", 14, y);
-    y += 7;
-    const restatedClaimLines = doc.splitTextToSize(report.restated_claim, 180);
-    doc.text(restatedClaimLines, 14, y);
-    y += restatedClaimLines.length * 7 + 5;
+    const summaryLines = doc.splitTextToSize(`Summary: ${source.summary}`, 180);
+    doc.text(summaryLines, 14, y);
+    y += summaryLines.length * 6;
 
-    doc.text("Evaluation:", 14, y);
-    y += 7;
-    doc.text(`Verdict: ${report.verdict}`, 14, y);
-    y += 7;
-    const explanationLines = doc.splitTextToSize(report.explanation, 180);
-    doc.text(explanationLines, 14, y);
-    y += explanationLines.length * 7 + 5;
+    const strengthsLines = doc.splitTextToSize(
+      `Strengths: ${source.strengths}`,
+      180
+    );
+    doc.text(strengthsLines, 14, y);
+    y += strengthsLines.length * 6;
 
-    doc.text("Sources:", 14, y);
-    y += 8;
+    const limitationsLines = doc.splitTextToSize(
+      `Limitations: ${source.limitations}`,
+      180
+    );
+    doc.text(limitationsLines, 14, y);
+    y += limitationsLines.length * 6 + 5;
+  });
 
-    report.sources.forEach((source, index) => {
-      if (y > 270) {
-        doc.addPage();
-        y = 20;
-      }
+  doc.save("greenwatch_report.pdf");
+};
 
-      doc.setFont("helvetica", "bold");
-      doc.text(`${index + 1}. ${source.title}`, 14, y);
-      y += 6;
-
-      doc.setFont("helvetica", "normal");
-      const summaryLines = doc.splitTextToSize(
-        `Summary: ${source.summary}`,
-        180
-      );
-      doc.text(summaryLines, 14, y);
-      y += summaryLines.length * 6;
-
-      const strengthsLines = doc.splitTextToSize(
-        `Strengths: ${source.strengths}`,
-        180
-      );
-      doc.text(strengthsLines, 14, y);
-      y += strengthsLines.length * 6;
-
-      const limitationsLines = doc.splitTextToSize(
-        `Limitations: ${source.limitations}`,
-        180
-      );
-      doc.text(limitationsLines, 14, y);
-      y += limitationsLines.length * 6 + 5;
-    });
-
-    doc.save("greenwatch_report.pdf");
-  };
 
   return (
     <div className="flex min-h-screen bg-[#f7f9fb] text-gray-900 font-sans">
@@ -403,20 +414,26 @@ export default function Home() {
       </div>
 
       <form onSubmit={submit} className="relative mt-12">
-        <textarea
-          rows={4}
-          className="w-full p-5 pr-16 border border-gray-300 rounded-xl shadow-md resize-none focus:ring-2 focus:ring-emerald-500 focus:outline-none text-base placeholder-gray-400"
-          placeholder="e.g. Amazon says it will be net-zero by 2040"
-          value={claim}
-          onChange={(e) => setClaim(e.target.value)}
-        />
+        <div className="relative">
+          <textarea
+            rows={4}
+            value={claim}
+            onChange={(e) => setClaim(e.target.value)}
+            className="w-full p-4 border border-gray-300 rounded-lg shadow-md resize-none focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm bg-white"
+          />
+          {claim.length === 0 && (
+            <div className="absolute top-4 left-4 text-gray-400 pointer-events-none text-sm">
+              {animatedPlaceholder}
+            </div>
+          )}
+        </div>
         <button
-  type="submit"
-  className="absolute bottom-3 right-3 bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-full shadow-md transition"
-  aria-label="Submit"
->
-  <HiArrowUpCircle className="w-6 h-6" />
-</button>
+          type="submit"
+          className="absolute bottom-3 right-3 bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-full shadow-md transition"
+          aria-label="Submit"
+        >
+          <HiArrowUpCircle className="w-6 h-6" />
+        </button>
 
       </form>
     </div>
