@@ -97,34 +97,39 @@ export default function Home() {
       setError("Please log in to submit a claim.");
       return;
     }
-
+  
     setLoading(true);
     setError("");
     setReport(null);
-
+  
     try {
       const res = await axios.post(
         "https://greenwash-api-production.up.railway.app/check",
         { claim }
       );
+  
+      console.log("API response:", res.data); // 👈 ADD THIS
+  
       if (res.data.error) throw new Error(res.data.error);
-
+  
       const docRef = await addDoc(collection(db, "reports"), {
         uid: user.uid,
         claim,
         report: res.data,
         createdAt: new Date().toISOString(),
       });
-
+  
       setReport(res.data);
       fetchReports(user.uid);
       setActiveReportId(docRef.id);
-    } catch (err) {
+    } catch (err: any) {
+      console.error("Claim submit failed:", err.message); // 👈 ADD THIS
       setError("Something went wrong. Please try again.");
     }
-
+  
     setLoading(false);
   };
+  
 
   const downloadPDF = () => {
     if (!report) return;
