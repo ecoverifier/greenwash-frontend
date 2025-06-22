@@ -6,7 +6,8 @@ import jsPDF from "jspdf";
 import { FaUserCircle, FaRobot, FaPlus, FaTrashAlt } from "react-icons/fa";
 import { HiArrowUpCircle } from "react-icons/hi2";
 import { RiChatNewLine } from "react-icons/ri";
-import { FiLogIn, FiLogOut } from "react-icons/fi";
+import { FiLogIn, FiLogOut, FiMenu, FiX } from "react-icons/fi";
+import { FaArrowDown } from "react-icons/fa";
 
 
 
@@ -39,6 +40,8 @@ type ReportType = {
 
 export default function Home() {
   // 🔒 Auth state and logout
+const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
 const [sessionStarted, setSessionStarted] = useState(false);
 const [user, setUser] = useState<User | null>(null);
 const [error, setError] = useState("");
@@ -276,36 +279,71 @@ const downloadPDF = () => {
 
   doc.save("greenwatch_report.pdf");
 };
+const [showScrollButton, setShowScrollButton] = useState(true);
+
+useEffect(() => {
+  const handleScroll = () => {
+    const scrollY = window.scrollY;
+    setShowScrollButton(scrollY < 200); // hide after 200px scroll
+  };
+
+  window.addEventListener("scroll", handleScroll);
+  return () => window.removeEventListener("scroll", handleScroll);
+}, []);
 
 
   return (
-    <div className="flex min-h-screen bg-[#f7f9fb] text-gray-900 font-sans">
-      {/* Sidebar */}
-      <aside className="w-65 bg-white border-r border-gray-200 px-6 py-6 shadow-md rounded-md">
-      <div className="flex items-center justify-between mb-6">
-  <h2 className="text-lg font-bold text-emerald-700 tracking-tight">
-    Reports
-  </h2>
-
-  {/* New Claim Button */}
-  <button
-    onClick={() => {
-      setReport(null);
-      setClaim("");
-      setActiveReportId(null);
-      setSessionStarted(false);
-    }}
-    className="flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition"
-    title="New Claim"
-  >
-    <RiChatNewLine className="w-5 h-5" />
-  </button>
-</div>
-
+    <>
+  {/* Header */}
+  {!sessionStarted && (
+  <header className="md:ml-64 sticky top-0 z-50 bg-[#f7f9fb] px-6 py-4 flex justify-between items-center shadow-sm">
+    <div className="flex items-center gap-2">
+      <img src="favicon.ico" alt="EcoVerifier Logo" className="w-6 h-6" />
+      <span className="text-lg font-semibold text-emerald-600 tracking-tight">
+        EcoVerifier
+      </span>
+    </div>
+    <button
+      onClick={() => {
+        const about = document.getElementById("about");
+        about?.scrollIntoView({ behavior: "smooth" });
+      }}
+      className="text-sm text-gray-500 hover:text-emerald-600 transition font-medium"
+    >
+      About
+    </button>
+  </header>
+)}
 
 
-  {/* Report List */}
-  <div className="space-y-4">
+  {/* Main Layout */}
+  <div className="flex min-h-screen bg-[#f7f9fb] text-gray-900 font-sans">
+    
+  <aside
+  className={`fixed top-0 left-0 z-40 w-64 h-screen bg-white border-r border-gray-100 shadow-xl flex flex-col transform transition-transform duration-300 ease-in-out ${
+    isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+  } md:translate-x-0`}
+>
+  {/* Header */}
+  <div className="flex items-center justify-between px-6 pt-6 pb-2 mb-2 border-b border-gray-100">
+    <h2 className="text-lg font-semibold text-emerald-700 tracking-tight">Reports</h2>
+    <button
+      onClick={() => {
+        setReport(null);
+        setClaim("");
+        setActiveReportId(null);
+        setSessionStarted(false);
+        if (window.innerWidth < 768) setIsSidebarOpen(false);
+      }}
+      className="flex items-center gap-1 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition"
+      title="New Claim"
+    >
+      <RiChatNewLine className="w-5 h-5" />
+    </button>
+  </div>
+
+  {/* Reports List */}
+  <div className="flex-1 overflow-y-auto px-6 py-2 space-y-4">
     {reports.map((r) => (
       <div
         key={r.id}
@@ -314,29 +352,32 @@ const downloadPDF = () => {
           setClaim(r.claim);
           setActiveReportId(r.id);
           setSessionStarted(true);
+          if (window.innerWidth < 768) setIsSidebarOpen(false);
         }}
-        className={`relative group p-4 rounded-lg border text-sm cursor-pointer transition-all duration-200 ${
+        className={`relative group p-4 rounded-xl border cursor-pointer shadow-sm transition-all duration-200 ${
           r.id === activeReportId
             ? "bg-emerald-50 border-emerald-300 ring-1 ring-emerald-200"
             : "bg-white hover:bg-gray-50 border-gray-200"
         }`}
       >
-        <span className="block pr-6 text-gray-800 font-medium truncate">
+        <span className="block pr-6 font-medium text-sm text-gray-800 truncate">
           {r.claim}
         </span>
 
-        {/* Delete Button */}
+        {/* Delete */}
         <button
           onClick={(e) => {
             e.stopPropagation();
             setReports((prev) => {
-              const updatedReports = prev.filter((rep) => rep.id !== r.id);
-              if (activeReportId === r.id) {
-                if (updatedReports.length > 0) {
-                  const nextActive = updatedReports[0];
-                  setReport(nextActive.report);
-                  setClaim(nextActive.claim);
-                  setActiveReportId(nextActive.id);
+              const updated = prev.filter((rep) => rep.id !== r.id);
+              const active = r.id === activeReportId;
+
+              if (active) {
+                if (updated.length > 0) {
+                  const next = updated[0];
+                  setReport(next.report);
+                  setClaim(next.claim);
+                  setActiveReportId(next.id);
                   setSessionStarted(true);
                 } else {
                   setReport(null);
@@ -345,14 +386,14 @@ const downloadPDF = () => {
                   setSessionStarted(false);
                 }
               }
+
               if (!user) {
-                localStorage.setItem(
-                  "anon_reports",
-                  JSON.stringify(updatedReports)
-                );
+                localStorage.setItem("anon_reports", JSON.stringify(updated));
               }
-              return updatedReports;
+
+              return updated;
             });
+
             if (user) {
               deleteDoc(doc(db, "reports", r.id));
             }
@@ -365,26 +406,13 @@ const downloadPDF = () => {
       </div>
     ))}
   </div>
-</aside>
 
-
-  
-
-
-<main className="flex-1 px-6 py-5 sm:px-10 bg-gray-50 transition-all duration-300 min-h-screen">
-  {/* Header */}
-  <div className="flex justify-between items-center mb-12">
-    <div className="flex items-center gap-3">
-      <img src="favicon.ico" alt="EcoVerifier Logo" className="w-10 h-10" />
-      <span className="text-2xl font-semibold text-emerald-600 tracking-tight">
-        EcoVerifier
-      </span>
-    </div>
-
+  {/* Auth Footer */}
+  <div className="px-6 py-5 border-t border-gray-100 mt-auto">
     {user ? (
       <button
         onClick={handleLogout}
-        className="inline-flex items-center gap-2 text-sm font-medium text-red-500 hover:text-red-600 border border-red-100 hover:border-red-300 px-3 py-1.5 rounded-md transition-all shadow-sm hover:shadow-md"
+        className="flex items-center gap-2 text-sm font-medium text-red-500 hover:text-red-600 transition"
       >
         <FiLogOut className="w-4 h-4" />
         Logout
@@ -392,136 +420,201 @@ const downloadPDF = () => {
     ) : (
       <button
         onClick={login}
-        className="inline-flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 border border-emerald-100 hover:border-emerald-300 px-3 py-1.5 rounded-md transition-all shadow-sm hover:shadow-md"
+        className="flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition"
       >
         <FiLogIn className="w-4 h-4" />
         Login with Google
       </button>
     )}
   </div>
+</aside>
 
-  {/* Welcome Page */}
-  {!sessionStarted ? (
-    <div className="w-full max-w-2xl mx-auto text-center space-y-12 pt-12">
-      <div className="space-y-6">
-        <h1 className="text-5xl sm:text-6xl font-extrabold text-emerald-700 leading-tight">
-          Verify Sustainability Claims in Seconds.
-        </h1>
-        <p className="text-gray-600 text-lg max-w-xl mx-auto">
-          EcoVerifier helps you cut through greenwashing by analyzing
-          environmental claims using trusted sources.
-        </p>
+
+    {/* Mobile Overlay */}
+    {isSidebarOpen && (
+      <div
+        className="fixed inset-0 bg-black bg-opacity-30 z-30 md:hidden"
+        onClick={() => setIsSidebarOpen(false)}
+      />
+    )}
+
+    {/* Main Content */}
+    <main className="md:pl-64 flex-1 px-6 py-5 sm:px-10 bg-gray-50 min-h-screen">
+      {/* Top Row */}
+      <div className="flex justify-between items-center md:hidden mb-4">
+        <button
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="text-emerald-600"
+          aria-label="Toggle Sidebar"
+        >
+          {isSidebarOpen ? <FiX className="w-6 h-6" /> : <FiMenu className="w-6 h-6" />}
+        </button>
       </div>
 
-      <form onSubmit={submit} className="relative mt-12">
-        <div className="relative">
-          <textarea
-            rows={4}
-            value={claim}
-            onChange={(e) => setClaim(e.target.value)}
-            className="w-full p-4 border border-gray-300 rounded-lg shadow-md resize-none focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm bg-white"
-          />
-          {claim.length === 0 && (
-            <div className="absolute top-4 left-4 text-gray-400 pointer-events-none text-sm">
-              {animatedPlaceholder}
-            </div>
-          )}
-        </div>
-        <button
-          type="submit"
-          className="absolute bottom-3 right-3 bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-full shadow-md transition"
-          aria-label="Submit"
-        >
-          <HiArrowUpCircle className="w-6 h-6" />
-        </button>
+      {/* Content */}
+      {!sessionStarted ? (
+        <div className="w-full max-w-2xl mx-auto text-center space-y-12 pt-12">
+          <div className="space-y-6 min-h-screen">
+            <h1 className="text-4xl md:text-6xl font-extrabold text-emerald-700 leading-tight">
+              Verify Sustainability Claims in Seconds.
+            </h1>
+            <p className="text-gray-600 text-md md:text-lg max-w-xl mx-auto">
+              EcoVerifier helps you cut through greenwashing by analyzing environmental claims using trusted sources.
+            </p>
 
-      </form>
-    </div>
-  ) : (
-    <div className="max-w-2xl space-y-8 mx-auto">
-      {/* User Message */}
-<div className="flex items-start gap-4">
-  <div className="text-emerald-700">
-    <FaUserCircle className="w-8 h-8" />
-  </div>
-  <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 shadow-sm text-sm leading-relaxed max-w-full">
-    {claim}
-  </div>
-</div>
+            <form onSubmit={submit} className="relative mt-12">
+              <div className="relative">
+                <textarea
+                  rows={4}
+                  value={claim}
+                  onChange={(e) => setClaim(e.target.value)}
+                  className="w-full p-4 border border-gray-300 rounded-lg shadow-md resize-none focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm bg-white"
+                />
+                {claim.length === 0 && (
+                  <div className="absolute top-4 left-4 text-gray-400 pointer-events-none text-sm">
+                    {animatedPlaceholder}
+                  </div>
+                )}
+              </div>
+              <button
+                type="submit"
+                className="absolute bottom-3 right-3 bg-emerald-600 hover:bg-emerald-700 text-white p-2 md:p-3 rounded-full shadow-md transition"
+                aria-label="Submit"
+              >
+                <HiArrowUpCircle className="md:w-6 md:h-6 h-5 w-5" />
+              </button>
+            </form>
 
-{/* Bot Message */}
-<div className="flex items-start gap-4">
-  <div className="text-white bg-emerald-600 p-1.5 rounded-full">
-    <FaRobot className="w-6 h-6" />
-  </div>
-  <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 shadow-sm text-sm">
-    {loading ? (
-      <span className="animate-pulse text-gray-700">Analyzing claim...</span>
-    ) : (
-      <p className="text-md font-bold">Report Generated</p>
-    )}
-  </div>
-</div>
-
-
-      {/* Report Display */}
-      {report && (
-        <div className="flex items-start gap-4">
-
-          <div className="bg-white border border-gray-200 rounded-xl px-6 py-6 shadow space-y-6 text-sm w-full">
-            <div>
-              <p className="text-xs uppercase font-semibold text-gray-500 mb-1">Rephrased Claim</p>
-              <p>{report.restated_claim}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase font-semibold text-gray-500 mb-1">Verdict</p>
-              <p className="font-medium">{report.verdict}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase font-semibold text-gray-500 mb-1">Explanation</p>
-              <p>{report.explanation}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase font-semibold text-gray-500 mb-1">Sources</p>
-              <ol className="list-decimal list-inside space-y-4">
-                {report.sources.map((source, idx) => (
-                  <li key={idx}>
-                    <a
-                      href={source.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-semibold text-emerald-600 hover:underline"
-                    >
-                      {source.title}
-                    </a>
-                    <p className="text-gray-700">{source.summary}</p>
-                    <p>
-                      <strong>Strengths:</strong> {source.strengths}
-                    </p>
-                    <p>
-                      <strong>Limitations:</strong> {source.limitations}
-                    </p>
-                  </li>
-                ))}
-              </ol>
-            </div>
-            <button
-              onClick={downloadPDF}
-              className="inline-flex items-center gap-2 bg-gray-100 border border-gray-300 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-md text-xs font-medium transition"
+            {/* Scroll Button */}
+            <a
+              href="#about"
+              className={`fixed bottom-6 right-6 z-50 p-4 rounded-full shadow-lg bg-emerald-600 text-white transition-transform duration-500 ease-in-out ${
+                showScrollButton ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"
+              }`}
+              aria-label="Scroll to About"
             >
-              Download PDF
-            </button>
+              <FaArrowDown className="w-4 h-4" />
+            </a>
           </div>
+
+          {/* About Section */}
+          <section id="about" className="scroll mt-20 pt-20 px-4 sm:px-0 mb-20">
+            <div className="max-w-2xl mx-auto space-y-8">
+              <h2 className="text-3xl font-bold text-emerald-700 text-center">About EcoVerifier</h2>
+              <p className="text-gray-700 text-base leading-relaxed text-center">
+                EcoVerifier helps critically evaluate environmental claims using trusted data and AI.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm text-gray-700">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Who It's For</h3>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Students researching climate responsibility</li>
+                    <li>Journalists verifying environmental claims</li>
+                    <li>Consumers checking company pledges</li>
+                  </ul>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Tech Stack</h3>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>React + Next.js</li>
+                    <li>Tailwind CSS</li>
+                    <li>Firebase (Auth & DB)</li>
+                    <li>GPT 4.1 + Brave API</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">About the Creator</h3>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  I'm Ishan Singh, a high school student passionate about tech and economics.
+                  EcoVerifier is my initiative to fight misinformation and greenwashing with AI.
+                </p>
+              </div>
+
+              <blockquote className="italic text-sm text-gray-500 border-l-4 border-emerald-400 pl-4 mt-4">
+                “68% of consumers don’t trust environmental claims made by brands.” — Harvard Business Review, 2023
+              </blockquote>
+            </div>
+          </section>
         </div>
-      )}
-    </div>
+      ) : (
+        <div className="max-w-3xl mx-auto px-6 py-10 space-y-10 bg-gray-50">
+  {/* Claim Input */}
+  <section className="bg-white border border-gray-200 rounded-xl shadow px-6 py-5 space-y-2">
+    <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Submitted Claim</h2>
+    <p className="text-gray-700 text-base leading-relaxed">
+      {claim}
+    </p>
+  </section>
+
+  {/* Analysis Status */}
+  <section className="bg-white border border-gray-200 rounded-xl shadow px-6 py-5 space-y-2">
+    <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Analysis Status</h2>
+    {loading ? (
+      <p className="text-gray-500 italic animate-pulse">Analyzing the claim using AI and external sources...</p>
+    ) : (
+      <p className="text-emerald-600 font-medium">Report Generated Successfully</p>
+    )}
+  </section>
+
+  {/* Report Output */}
+  {report && (
+    <section className="bg-white border border-gray-200 rounded-xl shadow px-6 py-6 space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">Rephrased Claim</h3>
+        <p className="text-gray-700">{report.restated_claim}</p>
+      </div>
+      <div>
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">Verdict</h3>
+        <p className="text-gray-800 font-medium">{report.verdict}</p>
+      </div>
+      <div>
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">Explanation</h3>
+        <p className="text-gray-700 leading-relaxed">{report.explanation}</p>
+      </div>
+      <div>
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">Sources</h3>
+        <ol className="list-decimal list-inside space-y-4 text-sm text-gray-700">
+          {report.sources.map((source, idx) => (
+            <li key={idx} className="space-y-1">
+              <a
+                href={source.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-emerald-600 hover:underline"
+              >
+                {source.title}
+              </a>
+              <p>{source.summary}</p>
+              <p><strong>Strengths:</strong> {source.strengths}</p>
+              <p><strong>Limitations:</strong> {source.limitations}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      <div className="pt-4">
+        <button
+          onClick={downloadPDF}
+          className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm font-medium transition"
+        >
+          Download PDF
+        </button>
+      </div>
+    </section>
   )}
-</main>
+</div>
 
+      )}
+    </main>
+  </div>
+</>
 
-
-    </div>
   );
   
   
+  
 }
+
