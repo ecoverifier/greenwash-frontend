@@ -295,41 +295,52 @@ useEffect(() => {
   return (
     <>
   {!sessionStarted && (
-  <header className="md:ml-64 sticky top-0 z-50 backdrop-blur-md bg-white/70 border-b border-gray-200 px-6 py-4 flex items-center justify-between shadow-sm">
+  <header className="md:ml-64 sticky top-0 z-50 backdrop-blur-md bg-white/70 border-b border-gray-200 px-6 py-4 flex items-center justify-between shadow-sm relative">
     
-    {/* Left: Mobile Menu Toggle */}
-    <button
-      onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-      className="md:hidden text-emerald-600"
-      aria-label="Toggle Sidebar"
-    >
-      {isSidebarOpen ? (
-        <FiX className="w-6 h-6" />
-      ) : (
-        <FiMenu className="w-6 h-6" />
-      )}
-    </button>
+    {/* Left: Mobile menu + Brand (desktop) */}
+    <div className="flex items-center gap-3">
+      {/* Mobile toggle (mobile only) */}
+      <button
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        className="md:hidden text-emerald-600"
+        aria-label="Toggle Sidebar"
+      >
+        {isSidebarOpen ? <FiX className="w-6 h-6" /> : <FiMenu className="w-6 h-6" />}
+      </button>
 
-    {/* Center: Logo and Brand Name */}
-    <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2">
+      {/* Brand for desktop (hidden on mobile) */}
+      <div className="hidden md:flex items-center gap-2">
+        <img src="favicon.ico" alt="EcoVerifier Logo" className="w-6 h-6" />
+        <span className="text-lg font-semibold text-emerald-600 tracking-tight">
+          EcoVerifier
+        </span>
+      </div>
+    </div>
+
+    {/* Center: Brand on mobile only */}
+    <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2 md:hidden">
       <img src="favicon.ico" alt="EcoVerifier Logo" className="w-6 h-6" />
-      <span className="text-lg font-semibold text-emerald-600 tracking-tight">
+      <span className="text-base font-semibold text-emerald-600 tracking-tight">
         EcoVerifier
       </span>
     </div>
 
-    {/* Right: Optional */}
-    <button
-      onClick={() => {
-        const about = document.getElementById("about");
-        about?.scrollIntoView({ behavior: "smooth" });
-      }}
-      className=" sm:inline text-sm text-gray-600 hover:text-emerald-600 transition font-medium"
-    >
-      About
-    </button>
+    {/* Right: About button (desktop only) */}
+    <div className="">
+      <button
+        onClick={() => {
+          const about = document.getElementById("about");
+          about?.scrollIntoView({ behavior: "smooth" });
+        }}
+        className="text-sm text-gray-600 hover:text-emerald-600 transition font-medium"
+      >
+        About
+      </button>
+    </div>
   </header>
 )}
+
+
 
 <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-white via-[#f7f9fb] to-transparent -z-10" />
 
