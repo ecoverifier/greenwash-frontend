@@ -521,7 +521,7 @@ useEffect(() => {
           </div>
 
           {/* About Section */}
-          <section id="about" className="scroll mt-20 pt-20 px-4 sm:px-0 mb-20">
+          <section id="about" className="scroll mt-20 px-2 sm:px-0 mb-20">
             <div className="max-w-2xl mx-auto space-y-8">
               <h2 className="text-3xl font-bold text-emerald-700 text-center">About EcoVerifier</h2>
               <p className="text-gray-700 text-base leading-relaxed text-center">
@@ -533,7 +533,7 @@ useEffect(() => {
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Who It's For</h3>
                   <ul className="list-disc list-inside space-y-1">
                     <li>Students researching climate responsibility</li>
-                    <li>Journalists verifying environmental claims</li>
+                    <li>ESG investors analyzing environmental factors</li>
                     <li>Consumers checking company pledges</li>
                   </ul>
                 </div>
