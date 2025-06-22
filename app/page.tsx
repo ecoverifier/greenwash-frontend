@@ -353,10 +353,11 @@ useEffect(() => {
     ${isSidebarOpen ? "translate-x-0 z-[60]" : "-translate-x-full z-40"}
     w-full max-w-xs md:w-64 md:translate-x-0 md:z-40 border-r border-gray-100`}
 >
-
-  {/* Header */}
-  <div className="flex items-center justify-between px-6 pt-6 pb-2 mb-2 border-b border-gray-100">
-    <h2 className="text-lg font-semibold text-emerald-700 tracking-tight">Reports</h2>
+  {/* Sidebar Header */}
+  <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
+    <h2 className="text-sm font-semibold text-gray-900 tracking-wide uppercase">
+      Reports
+    </h2>
     <button
       onClick={() => {
         setReport(null);
@@ -365,79 +366,77 @@ useEffect(() => {
         setSessionStarted(false);
         if (window.innerWidth < 768) setIsSidebarOpen(false);
       }}
-      className="flex items-center gap-1 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition"
+      className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700 transition"
       title="New Claim"
     >
-      <RiChatNewLine className="w-5 h-5" />
+      <RiChatNewLine className="w-4 h-4" />
+      New
     </button>
   </div>
+  <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+  {reports.map((r) => (
+    <div
+      key={r.id}
+      onClick={() => {
+        setReport(r.report);
+        setClaim(r.claim);
+        setActiveReportId(r.id);
+        setSessionStarted(true);
+        if (window.innerWidth < 768) setIsSidebarOpen(false);
+      }}
+      className={`group relative p-3 rounded-md text-sm cursor-pointer transition-all duration-200 shadow-sm ${
+        r.id === activeReportId
+          ? "bg-gray-100 shadow-inner"
+          : "hover:bg-gray-50"
+      }`}
+    >
+      <span className="block pr-6 font-medium text-sm text-gray-800 leading-tight truncate">
+        {r.claim}
+      </span>
 
-  {/* Reports List */}
-  <div className="flex-1 overflow-y-auto px-6 py-2 space-y-4">
-    {reports.map((r) => (
-      <div
-        key={r.id}
-        onClick={() => {
-          setReport(r.report);
-          setClaim(r.claim);
-          setActiveReportId(r.id);
-          setSessionStarted(true);
-          if (window.innerWidth < 768) setIsSidebarOpen(false);
-        }}
-        className={`relative group p-4 rounded-xl border cursor-pointer shadow-sm transition-all duration-200 ${
-          r.id === activeReportId
-            ? "bg-emerald-50 border-emerald-300 ring-1 ring-emerald-200"
-            : "bg-white hover:bg-gray-50 border-gray-200"
-        }`}
-      >
-        <span className="block pr-6 font-medium text-sm text-gray-800 truncate">
-          {r.claim}
-        </span>
+      {/* Trash icon – hidden by default, shown on hover */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setReports((prev) => {
+            const updated = prev.filter((rep) => rep.id !== r.id);
+            const active = r.id === activeReportId;
 
-        {/* Delete */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setReports((prev) => {
-              const updated = prev.filter((rep) => rep.id !== r.id);
-              const active = r.id === activeReportId;
-
-              if (active) {
-                if (updated.length > 0) {
-                  const next = updated[0];
-                  setReport(next.report);
-                  setClaim(next.claim);
-                  setActiveReportId(next.id);
-                  setSessionStarted(true);
-                } else {
-                  setReport(null);
-                  setClaim("");
-                  setActiveReportId(null);
-                  setSessionStarted(false);
-                }
+            if (active) {
+              if (updated.length > 0) {
+                const next = updated[0];
+                setReport(next.report);
+                setClaim(next.claim);
+                setActiveReportId(next.id);
+                setSessionStarted(true);
+              } else {
+                setReport(null);
+                setClaim("");
+                setActiveReportId(null);
+                setSessionStarted(false);
               }
-
-              if (!user) {
-                localStorage.setItem("anon_reports", JSON.stringify(updated));
-              }
-
-              return updated;
-            });
-
-            if (user) {
-              deleteDoc(doc(db, "reports", r.id));
             }
-          }}
-          className="absolute top-3 right-3 text-red-400 hover:text-red-600 transition"
-          title="Delete report"
-        >
-          <FaTrashAlt className="w-4 h-4" />
-        </button>
-      </div>
-    ))}
-  </div>
 
-  {/* Auth Footer */}
+            if (!user) {
+              localStorage.setItem("anon_reports", JSON.stringify(updated));
+            }
+
+            return updated;
+          });
+
+          if (user) {
+            deleteDoc(doc(db, "reports", r.id));
+          }
+        }}
+        className="absolute top-2.5 right-3 text-gray-400 hover:text-red-500 transition-opacity opacity-0 group-hover:opacity-100"
+        title="Delete report"
+      >
+        <FaTrashAlt className="w-4 h-4" />
+      </button>
+    </div>
+  ))}
+</div>
+  {/* Footer (Auth) */}
   <div className="px-6 py-5 border-t border-gray-100 mt-auto">
     {user ? (
       <button
@@ -458,6 +457,7 @@ useEffect(() => {
     )}
   </div>
 </aside>
+
 
 
     {/* Mobile Overlay */}
