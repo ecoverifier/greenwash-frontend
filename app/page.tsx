@@ -557,7 +557,7 @@ useEffect(() => {
               </div>
 
               <blockquote className="italic text-sm text-gray-500 border-l-4 border-emerald-400 pl-4 mt-4">
-                “68% of consumers don’t trust environmental claims made by brands.” — Harvard Business Review, 2023
+                “55% of global customers are skeptical of the sustainability claims of most brands.” — YouGov, 2023
               </blockquote>
             </div>
           </section>
