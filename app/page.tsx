@@ -294,36 +294,55 @@ useEffect(() => {
 
   return (
     <>
-  {/* Header */}
   {!sessionStarted && (
-  <header className="md:ml-64 sticky top-0 z-50 bg-[#f7f9fb] px-6 py-4 flex justify-between items-center shadow-sm">
-    <div className="flex items-center gap-2">
+  <header className="md:ml-64 sticky top-0 z-50 backdrop-blur-md bg-white/70 border-b border-gray-200 px-6 py-4 flex items-center justify-between shadow-sm">
+    
+    {/* Left: Mobile Menu Toggle */}
+    <button
+      onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+      className="md:hidden text-emerald-600"
+      aria-label="Toggle Sidebar"
+    >
+      {isSidebarOpen ? (
+        <FiX className="w-6 h-6" />
+      ) : (
+        <FiMenu className="w-6 h-6" />
+      )}
+    </button>
+
+    {/* Center: Logo and Brand Name */}
+    <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2">
       <img src="favicon.ico" alt="EcoVerifier Logo" className="w-6 h-6" />
       <span className="text-lg font-semibold text-emerald-600 tracking-tight">
         EcoVerifier
       </span>
     </div>
+
+    {/* Right: Optional */}
     <button
       onClick={() => {
         const about = document.getElementById("about");
         about?.scrollIntoView({ behavior: "smooth" });
       }}
-      className="text-sm text-gray-500 hover:text-emerald-600 transition font-medium"
+      className=" sm:inline text-sm text-gray-600 hover:text-emerald-600 transition font-medium"
     >
       About
     </button>
   </header>
 )}
 
+<div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-white via-[#f7f9fb] to-transparent -z-10" />
+
 
   {/* Main Layout */}
   <div className="flex min-h-screen bg-[#f7f9fb] text-gray-900 font-sans">
     
   <aside
-  className={`fixed top-0 left-0 z-40 w-64 h-screen bg-white border-r border-gray-100 shadow-xl flex flex-col transform transition-transform duration-300 ease-in-out ${
-    isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-  } md:translate-x-0`}
+  className={`fixed top-0 left-0 h-screen bg-white shadow-xl flex flex-col transition-transform duration-300 ease-in-out
+    ${isSidebarOpen ? "translate-x-0 z-[60]" : "-translate-x-full z-40"}
+    w-full max-w-xs md:w-64 md:translate-x-0 md:z-40 border-r border-gray-100`}
 >
+
   {/* Header */}
   <div className="flex items-center justify-between px-6 pt-6 pb-2 mb-2 border-b border-gray-100">
     <h2 className="text-lg font-semibold text-emerald-700 tracking-tight">Reports</h2>
@@ -433,27 +452,20 @@ useEffect(() => {
     {/* Mobile Overlay */}
     {isSidebarOpen && (
       <div
-        className="fixed inset-0 bg-black bg-opacity-30 z-30 md:hidden"
+        className="fixed inset-0 bg-opacity-30 z-30 md:hidden"
         onClick={() => setIsSidebarOpen(false)}
       />
     )}
 
     {/* Main Content */}
     <main className="md:pl-64 flex-1 px-6 py-5 sm:px-10 bg-gray-50 min-h-screen">
-      {/* Top Row */}
-      <div className="flex justify-between items-center md:hidden mb-4">
-        <button
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="text-emerald-600"
-          aria-label="Toggle Sidebar"
-        >
-          {isSidebarOpen ? <FiX className="w-6 h-6" /> : <FiMenu className="w-6 h-6" />}
-        </button>
-      </div>
+
 
       {/* Content */}
       {!sessionStarted ? (
+        
         <div className="w-full max-w-2xl mx-auto text-center space-y-12 pt-12">
+          
           <div className="space-y-6 min-h-screen">
             <h1 className="text-4xl md:text-6xl font-extrabold text-emerald-700 leading-tight">
               Verify Sustainability Claims in Seconds.
@@ -541,6 +553,16 @@ useEffect(() => {
         </div>
       ) : (
         <div className="max-w-3xl mx-auto px-6 py-10 space-y-10 bg-gray-50">
+                {/* Top Row */}
+      <div className="flex justify-between items-center md:hidden mb-4">
+        <button
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="text-emerald-600"
+          aria-label="Toggle Sidebar"
+        >
+          {isSidebarOpen ? <FiX className="w-6 h-6" /> : <FiMenu className="w-6 h-6" />}
+        </button>
+      </div>
   {/* Claim Input */}
   <section className="bg-white border border-gray-200 rounded-xl shadow px-6 py-5 space-y-2">
     <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">Submitted Claim</h2>
