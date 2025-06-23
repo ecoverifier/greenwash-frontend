@@ -609,13 +609,7 @@ useEffect(() => {
 {/* Report Body */}
 {report && (
   <section className="space-y-10">
-    {/* Submitted Claim */}
-    <section className="space-y-4">
-      <h2 className="text-xl font-semibold text-gray-900">Claim</h2>
-      <div className="bg-gray-50 border border-gray-200 rounded-md p-5 text-base leading-relaxed">
-        {claim}
-      </div>
-    </section>
+
 
     {/* Verdict */}
     <div className="space-y-2">
