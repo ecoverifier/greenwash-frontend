@@ -143,7 +143,6 @@ const login = async () => {
     setError("Login failed. Please try again.");
   }
 };
-const API_BASE = "https://greenwash-api-production.up.railway.app";
 
 // 🚀 Submit a claim
 const submit = async (e?: any) => {
@@ -156,14 +155,12 @@ const submit = async (e?: any) => {
 
   try {
     // Step 1: Validate claim while on welcome screen
-
-    const validateRes = await axios.post(`${API_BASE}/validate`, { claim });
+    const validateRes = await axios.post("/validate", { claim });
     if (validateRes.data.error) {
       setError("That doesn't appear to be a valid sustainability claim. Please try again.");
       setLoading(false);
       return;
     }
-
 
     // ✅ Valid claim — now flip to report screen
     const tempId = `temp-${Date.now()}`;
@@ -180,14 +177,12 @@ const submit = async (e?: any) => {
     }
 
     // Step 2: Analyze (now from report screen)
-
-    const analyzeRes = await axios.post(`${API_BASE}/analyze`, { claim });
+    const analyzeRes = await axios.post("/analyze", { claim });
     if (analyzeRes.data.error) {
       setError("There was an issue analyzing your claim. Try again.");
       setLoading(false);
       return;
     }
-
 
     // ✅ Save report
     if (user) {
