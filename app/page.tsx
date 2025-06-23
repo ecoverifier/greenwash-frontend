@@ -197,7 +197,10 @@ const submit = async (e?: any) => {
     }
   } catch (err: any) {
     console.error("Claim submit failed:", err.message);
-    setError("Something went wrong. Please try again.");
+    setError(
+      err?.response?.data?.error || err?.message || "Something went wrong. Please try again."
+    );
+    
     setReports((prev) => prev.filter((r) => r.id !== tempId));
     if (!user) {
       localStorage.setItem(
@@ -507,6 +510,12 @@ useEffect(() => {
     <HiArrowUpCircle className="md:w-6 md:h-6 h-5 w-5" />
   </button>
 </form>
+{error && (
+  <p className="mt-4 text-center text-red-500 font-medium text-sm">
+    {error}
+  </p>
+)}
+
 
 
             {/* Scroll Button */}
