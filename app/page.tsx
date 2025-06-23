@@ -171,8 +171,13 @@ const submit = async (e?: any) => {
       "https://greenwash-api-production.up.railway.app/check",
       { claim }
     );
-    if (res.data.error) throw new Error(res.data.error);
-
+    if (res.data.error) {
+      setReport(null);
+      setError(res.data.error); // backend-provided message
+      setSessionStarted(true);  // enter the report UI anyway
+      return;
+    }
+    
     if (user) {
       const docRef = await addDoc(collection(db, "reports"), {
         uid: user.uid,
@@ -600,73 +605,67 @@ useEffect(() => {
   </div>
 </section>
 
-{/* Status */}
-<section className="space-y-4">
-  <h2 className="text-xl font-semibold text-gray-900">Analysis Status</h2>
-  {loading ? (
-    <div className="text-gray-500 italic animate-pulse">
-      Analyzing the claim using large language models and reliable sources...
-    </div>
-  ) : (
-    <div className="text-green-700 text-lg font-medium">✓ Report Generated Successfully</div>
-  )}
-</section>
-
 {/* Report Body */}
-{report && (
-  <section className="space-y-10">
+<section className="space-y-10">
+  {report ? (
+    <>
+      {/* Verdict */}
+      <div className="space-y-2">
+        <h3 className="text-lg font-medium text-gray-900">Verdict</h3>
+        <p className="text-xl font-semibold text-gray-900">{report.verdict}</p>
+      </div>
 
-    {/* Rephrased Claim */}
-    <div className="space-y-2">
-      <h3 className="text-lg font-medium text-gray-900">Restated Claim</h3>
-      <p className="text-base leading-relaxed text-gray-800">{report.restated_claim}</p>
-    </div>
+      {/* Explanation */}
+      <div className="space-y-2">
+        <h3 className="text-lg font-medium text-gray-900">Explanation</h3>
+        <p className="text-base leading-relaxed text-gray-700">{report.explanation}</p>
+      </div>
 
-    {/* Verdict */}
-    <div className="space-y-2">
-      <h3 className="text-lg font-medium text-gray-900">Verdict</h3>
-      <p className="text-xl font-semibold text-gray-900">{report.verdict}</p>
-    </div>
+      {/* Sources */}
+      <div className="space-y-6">
+        <h3 className="text-lg font-medium text-gray-900">Verified Sources</h3>
+        <ul className="space-y-6 list-none">
+          {report.sources.map((source, idx) => (
+            <li key={idx} className="space-y-2 border-t pt-4">
+              <a
+                href={source.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 font-semibold hover:underline"
+              >
+                {source.title}
+              </a>
+              <p className="text-sm text-gray-700">{source.summary}</p>
+              <p className="text-sm">
+                <span className="font-semibold">Strengths:</span> {source.strengths}
+              </p>
+              <p className="text-sm">
+                <span className="font-semibold">Limitations:</span> {source.limitations}
+              </p>
+            </li>
+          ))}
+        </ul>
+      </div>
 
-    {/* Explanation */}
-    <div className="space-y-2">
-      <h3 className="text-lg font-medium text-gray-900">Explanation</h3>
-      <p className="text-base leading-relaxed text-gray-700">{report.explanation}</p>
+      {/* Download */}
+      <div className="pt-8">
+        <button
+          onClick={downloadPDF}
+          className="bg-gray-900 hover:bg-black text-white px-6 py-2 rounded-md text-sm font-medium transition-colors"
+        >
+          Download Full Report (PDF)
+        </button>
+      </div>
+    </>
+  ) : error ? (
+    <div className="text-center py-20">
+      <h3 className="text-xl font-semibold text-red-600">{error}</h3>
+      <p className="text-gray-600 text-sm mt-2">
+        Please try rephrasing the claim to be more factual or specific.
+      </p>
     </div>
-
-    {/* Sources */}
-    <div className="space-y-6">
-      <h3 className="text-lg font-medium text-gray-900">Verified Sources</h3>
-      <ul className="space-y-6 list-none">
-        {report.sources.map((source, idx) => (
-          <li key={idx} className="space-y-2 border-t pt-4">
-            <a
-              href={source.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 font-semibold hover:underline"
-            >
-              {source.title}
-            </a>
-            <p className="text-sm text-gray-700">{source.summary}</p>
-            <p className="text-sm"><span className="font-semibold">Strengths:</span> {source.strengths}</p>
-            <p className="text-sm"><span className="font-semibold">Limitations:</span> {source.limitations}</p>
-          </li>
-        ))}
-      </ul>
-    </div>
-
-    {/* Download */}
-    <div className="pt-8">
-      <button
-        onClick={downloadPDF}
-        className="bg-gray-900 hover:bg-black text-white px-6 py-2 rounded-md text-sm font-medium transition-colors"
-      >
-        Download Full Report (PDF)
-      </button>
-    </div>
-  </section>
-)}
+  ) : null}
+</section>
 </div>
 
 </div>
