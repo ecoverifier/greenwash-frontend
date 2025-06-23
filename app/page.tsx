@@ -486,27 +486,34 @@ useEffect(() => {
             </p>
 
             <form onSubmit={submit} className="relative mt-12">
-              <div className="relative">
-                <textarea
-                  rows={4}
-                  value={claim}
-                  onChange={(e) => setClaim(e.target.value)}
-                  className="w-full p-4 border border-gray-300 rounded-lg shadow-md resize-none focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm bg-white"
-                />
-                {claim.length === 0 && (
-                  <div className="absolute top-4 left-4 text-gray-400 pointer-events-none text-sm">
-                    {animatedPlaceholder}
-                  </div>
-                )}
-              </div>
-              <button
-                type="submit"
-                className="absolute bottom-3 right-3 bg-emerald-600 hover:bg-emerald-700 text-white p-2 md:p-3 rounded-full shadow-md transition"
-                aria-label="Submit"
-              >
-                <HiArrowUpCircle className="md:w-6 md:h-6 h-5 w-5" />
-              </button>
-            </form>
+  <div className="relative">
+    <textarea
+      rows={4}
+      value={claim}
+      onChange={(e) => setClaim(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          submit(e);
+        }
+      }}
+      className="w-full p-4 border border-gray-300 rounded-lg shadow-md resize-none focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm bg-white"
+    />
+    {claim.length === 0 && (
+      <div className="absolute top-4 left-4 text-gray-400 pointer-events-none text-sm">
+        {animatedPlaceholder}
+      </div>
+    )}
+  </div>
+  <button
+    type="submit"
+    className="absolute bottom-3 right-3 bg-emerald-600 hover:bg-emerald-700 text-white p-2 md:p-3 rounded-full shadow-md transition"
+    aria-label="Submit"
+  >
+    <HiArrowUpCircle className="md:w-6 md:h-6 h-5 w-5" />
+  </button>
+</form>
+
 
             {/* Scroll Button */}
             <a
