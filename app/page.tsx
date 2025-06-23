@@ -26,7 +26,6 @@ import {
 } from "firebase/firestore";
 
 type ReportType = {
-  restated_claim: string;
   sources: {
     title: string;
     url: string;
@@ -35,6 +34,7 @@ type ReportType = {
     limitations: string;
   }[];
   verdict: string;
+  report_text: string;
   explanation: string;
 };
 
@@ -235,11 +235,7 @@ const downloadPDF = () => {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(12);
   doc.setTextColor(33, 37, 41);
-  doc.text("Restated Claim:", 14, y);
-  y += 7;
-  const restatedClaimLines = doc.splitTextToSize(report.restated_claim, 180);
-  doc.text(restatedClaimLines, 14, y);
-  y += restatedClaimLines.length * 7 + 5;
+
 
   doc.text("Evaluation:", 14, y);
   y += 7;
@@ -613,6 +609,11 @@ useEffect(() => {
       <div className="space-y-2">
         <h3 className="text-lg font-medium text-gray-900">Verdict</h3>
         <p className="text-xl font-semibold text-gray-900">{report.verdict}</p>
+      </div>
+      {/* Explanation */}
+      <div className="space-y-2">
+        <h3 className="text-lg font-medium text-gray-900">Summary</h3>
+        <p className="text-base leading-relaxed text-gray-700">{report.report_text}</p>
       </div>
 
       {/* Explanation */}
