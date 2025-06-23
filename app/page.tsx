@@ -516,19 +516,22 @@ useEffect(() => {
 
 
             {/* Scroll Button */}
+            <div className="w-full flex justify-center py-6 px-4 md:px-8">
             <a
               href="#about"
-              className={`fixed bottom-6 z-50 p-4 rounded-full shadow-lg bg-emerald-600 text-white transition-transform duration-500 ease-in-out ${
+              className={`fixed bottom-6 z-50 p-4 rounded-full justify-center shadow-lg bg-emerald-600 text-white transition-transform duration-500 ease-in-out ${
                 showScrollButton ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"
               }`}
               aria-label="Scroll to About"
             >
               <FaArrowDown className="w-4 h-4" />
             </a>
+            </div>
+
           </div>
 
           {/* About Section */}
-          <section id="about" className="scroll mt-20 px-2 sm:px-0 mb-20">
+          <section id="about" className="scroll px-2 sm:px-0 mb-20">
             <div className="max-w-2xl mx-auto space-y-8">
               <h2 className="text-3xl font-bold text-emerald-700 text-center">About EcoVerifier</h2>
               <p className="text-gray-700 text-base leading-relaxed text-center">
