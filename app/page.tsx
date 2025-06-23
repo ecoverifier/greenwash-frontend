@@ -648,6 +648,12 @@ useEffect(() => {
         <p className="text-base leading-relaxed text-gray-700">{report.explanation}</p>
       </div>
 
+      {/* Explanation */}
+      <div className="space-y-2">
+        <h3 className="text-lg font-medium text-gray-900">Summary</h3>
+        <p className="text-base leading-relaxed text-gray-700">{report.report_text}</p>
+      </div>
+
       {/* Sources */}
       <div className="space-y-6">
         <h3 className="text-lg font-medium text-gray-900">Verified Sources</h3>
