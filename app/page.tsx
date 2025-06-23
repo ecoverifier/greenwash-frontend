@@ -507,12 +507,23 @@ useEffect(() => {
     )}
   </div>
   <button
-    type="submit"
-    className="absolute bottom-3 right-3 bg-emerald-600 hover:bg-emerald-700 text-white p-2 md:p-3 rounded-full shadow-md transition"
-    aria-label="Submit"
-  >
+  type="submit"
+  disabled={loading}
+  className={`absolute bottom-3 right-3 ${
+    loading ? "bg-gray-300 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700"
+  } text-white p-2 md:p-3 rounded-full shadow-md transition`}
+  aria-label="Submit"
+>
+  {loading ? (
+    <svg className="animate-spin h-5 w-5 md:h-6 md:w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+    </svg>
+  ) : (
     <HiArrowUpCircle className="md:w-6 md:h-6 h-5 w-5" />
-  </button>
+  )}
+</button>
+
 </form>
 
 
@@ -603,17 +614,27 @@ useEffect(() => {
 
 {/* Report Body */}
 <section className="space-y-10">
-  {report ? (
+  {/* Analysis Status */}
+  <section className="space-y-4">
+    <h2 className="text-xl font-semibold text-gray-900">Analysis Status</h2>
+    {loading ? (
+      <div className="text-gray-500 italic animate-pulse">
+        Analyzing the claim using large language models and reliable sources...
+      </div>
+    ) : error ? (
+      <div className="text-red-600 font-medium">{error}</div>
+    ) : (
+      <div className="text-green-700 text-lg font-medium">✓ Report Generated Successfully</div>
+    )}
+  </section>
+
+  {/* Conditionally render rest of report */}
+  {report && !error && (
     <>
       {/* Verdict */}
       <div className="space-y-2">
         <h3 className="text-lg font-medium text-gray-900">Verdict</h3>
         <p className="text-xl font-semibold text-gray-900">{report.verdict}</p>
-      </div>
-      {/* Explanation */}
-      <div className="space-y-2">
-        <h3 className="text-lg font-medium text-gray-900">Summary</h3>
-        <p className="text-base leading-relaxed text-gray-700">{report.report_text}</p>
       </div>
 
       {/* Explanation */}
@@ -648,7 +669,7 @@ useEffect(() => {
         </ul>
       </div>
 
-      {/* Download */}
+      {/* Download Button */}
       <div className="pt-8">
         <button
           onClick={downloadPDF}
@@ -658,15 +679,9 @@ useEffect(() => {
         </button>
       </div>
     </>
-  ) : error ? (
-    <div className="text-center py-20">
-      <h3 className="text-xl font-semibold text-red-600">{error}</h3>
-      <p className="text-gray-600 text-sm mt-2">
-        Please try rephrasing the claim to be more factual or specific.
-      </p>
-    </div>
-  ) : null}
+  )}
 </section>
+
 </div>
 
 </div>
