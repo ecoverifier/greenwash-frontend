@@ -216,7 +216,6 @@ const submit = async (e?: any) => {
   setLoading(false);
 };
 
-// 🧾 PDF download
 const downloadPDF = () => {
   if (!report) return;
 
@@ -224,6 +223,7 @@ const downloadPDF = () => {
   const pageWidth = doc.internal.pageSize.getWidth();
   let y = 20;
 
+  // Title
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
   doc.setTextColor(40, 167, 69);
@@ -232,19 +232,32 @@ const downloadPDF = () => {
   });
   y += 15;
 
+  // General styling
   doc.setFont("helvetica", "normal");
   doc.setFontSize(12);
   doc.setTextColor(33, 37, 41);
 
+  // Report Summary
+  if (report.report_text) {
+    const summaryLines = doc.splitTextToSize(report.report_text, 180);
+    doc.text("Summary:", 14, y);
+    y += 7;
+    doc.text(summaryLines, 14, y);
+    y += summaryLines.length * 6 + 5;
+  }
 
-  doc.text("Evaluation:", 14, y);
-  y += 7;
+  // Verdict
   doc.text(`Verdict: ${report.verdict}`, 14, y);
-  y += 7;
-  const explanationLines = doc.splitTextToSize(report.explanation, 180);
-  doc.text(explanationLines, 14, y);
-  y += explanationLines.length * 7 + 5;
+  y += 10;
 
+  // Explanation
+  const explanationLines = doc.splitTextToSize(report.explanation, 180);
+  doc.text("Explanation:", 14, y);
+  y += 7;
+  doc.text(explanationLines, 14, y);
+  y += explanationLines.length * 6 + 5;
+
+  // Sources Section
   doc.text("Sources:", 14, y);
   y += 8;
 
@@ -259,26 +272,21 @@ const downloadPDF = () => {
     y += 6;
 
     doc.setFont("helvetica", "normal");
-    const summaryLines = doc.splitTextToSize(`Summary: ${source.summary}`, 180);
-    doc.text(summaryLines, 14, y);
-    y += summaryLines.length * 6;
 
-    const strengthsLines = doc.splitTextToSize(
-      `Strengths: ${source.strengths}`,
-      180
-    );
-    doc.text(strengthsLines, 14, y);
-    y += strengthsLines.length * 6;
+    const summary = doc.splitTextToSize(`Summary: ${source.summary}`, 180);
+    doc.text(summary, 14, y);
+    y += summary.length * 6;
 
-    const limitationsLines = doc.splitTextToSize(
-      `Limitations: ${source.limitations}`,
-      180
-    );
-    doc.text(limitationsLines, 14, y);
-    y += limitationsLines.length * 6 + 5;
+    const strengths = doc.splitTextToSize(`Strengths: ${source.strengths}`, 180);
+    doc.text(strengths, 14, y);
+    y += strengths.length * 6;
+
+    const limitations = doc.splitTextToSize(`Limitations: ${source.limitations}`, 180);
+    doc.text(limitations, 14, y);
+    y += limitations.length * 6 + 5;
   });
 
-  doc.save("greenwatch_report.pdf");
+  doc.save("eco_verifier_report.pdf");
 };
 const [showScrollButton, setShowScrollButton] = useState(true);
 
