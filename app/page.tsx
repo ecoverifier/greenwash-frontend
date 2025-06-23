@@ -152,27 +152,29 @@ const submit = async (e?: any) => {
   setLoading(true);
   setError("");
   setReport(null);
-  setSessionStarted(true);
 
   const tempId = `temp-${Date.now()}`;
   const tempReport = { id: tempId, claim, report: null, loading: true };
   setReports((prev) => [tempReport, ...prev]);
   setActiveReportId(tempId);
 
-  if (!user) {
-    localStorage.setItem(
-      "anon_reports",
-      JSON.stringify([{ ...tempReport }, ...reports])
-    );
-  }
-
   try {
+    // ✅ Send directly to backend (now handles validation internally)
     const res = await axios.post(
       "https://greenwash-api-production.up.railway.app/check",
       { claim }
     );
-    if (res.data.error) throw new Error(res.data.error);
 
+    // ✅ Check for backend-reported error (e.g., invalid claim)
+    if (res.data.error) {
+      throw new Error(res.data.error);
+    }
+
+    // ✅ Show report immediately after response
+    setReport(res.data);
+    setSessionStarted(true); // Show report UI
+
+    // 🔐 Save report (user vs anon)
     if (user) {
       const docRef = await addDoc(collection(db, "reports"), {
         uid: user.uid,
@@ -183,7 +185,6 @@ const submit = async (e?: any) => {
       setActiveReportId(docRef.id);
     }
 
-    setReport(res.data);
     setReports((prev) =>
       prev.map((r) =>
         r.id === tempId ? { ...r, report: res.data, loading: false } : r
@@ -197,9 +198,19 @@ const submit = async (e?: any) => {
       localStorage.setItem("anon_reports", JSON.stringify(updated));
     }
   } catch (err: any) {
-    console.error("Claim submit failed:", err.message);
-    setError("Something went wrong. Please try again.");
+    console.error("Claim submit failed:", err.response?.data || err.message);
+
+    // ✅ Show backend error or fallback message
+    const backendMessage =
+      err?.response?.data?.error || err.message || "Something went wrong.";
+    setError(backendMessage);
+
+    // ❌ Reset view if claim invalid or failed
+    setSessionStarted(false);
+
+    // ❌ Remove failed entry from state
     setReports((prev) => prev.filter((r) => r.id !== tempId));
+
     if (!user) {
       localStorage.setItem(
         "anon_reports",
@@ -210,6 +221,7 @@ const submit = async (e?: any) => {
 
   setLoading(false);
 };
+
 
 // 🧾 PDF download
 const downloadPDF = () => {
