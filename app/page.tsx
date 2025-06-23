@@ -151,48 +151,26 @@ const submit = async (e?: any) => {
   setLoading(true);
   setError("");
   setReport(null);
+  setSessionStarted(true);
+
+  const tempId = `temp-${Date.now()}`;
+  const tempReport = { id: tempId, claim, report: null, loading: true };
+  setReports((prev) => [tempReport, ...prev]);
+  setActiveReportId(tempId);
+
+  if (!user) {
+    localStorage.setItem(
+      "anon_reports",
+      JSON.stringify([{ ...tempReport }, ...reports])
+    );
+  }
 
   try {
-    // ✅ Step 1: Validate claim
-    const validation = await axios.post("https://greenwash-api-production.up.railway.app/validate", {
-      claim,
-    });
-
-    if (!validation.data.valid) {
-      throw new Error("Please submit a verifiable factual claim.");
-    }
-
-    // ✅ At this point we know claim is valid — now create temp report
-    const tempId = `temp-${Date.now()}`;
-    const tempReport = { id: tempId, claim, report: null, loading: true };
-    setReports((prev) => [tempReport, ...prev]);
-    setActiveReportId(tempId);
-
-    if (!user) {
-      localStorage.setItem(
-        "anon_reports",
-        JSON.stringify([{ ...tempReport }, ...reports])
-      );
-    }
-
-    // ✅ Switch to report UI immediately
-    setSessionStarted(true);
-
-    // ✅ Step 2: Generate full report
-    const res = await axios.post("https://greenwash-api-production.up.railway.app/check", {
-      claim,
-    });
-
-    if (res.data.error) throw new Error(res.data.error);
-
-    setReport(res.data);
-
-    // 🔄 Update sidebar report
-    setReports((prev) =>
-      prev.map((r) =>
-        r.id === tempId ? { ...r, report: res.data, loading: false } : r
-      )
+    const res = await axios.post(
+      "https://greenwash-api-production.up.railway.app/check",
+      { claim }
     );
+    if (res.data.error) throw new Error(res.data.error);
 
     if (user) {
       const docRef = await addDoc(collection(db, "reports"), {
@@ -202,33 +180,38 @@ const submit = async (e?: any) => {
         createdAt: new Date().toISOString(),
       });
       setActiveReportId(docRef.id);
-    } else {
+    }
+
+    setReport(res.data);
+    setReports((prev) =>
+      prev.map((r) =>
+        r.id === tempId ? { ...r, report: res.data, loading: false } : r
+      )
+    );
+
+    if (!user) {
       const updated = reports.map((r) =>
         r.id === tempId ? { ...r, report: res.data, loading: false } : r
       );
       localStorage.setItem("anon_reports", JSON.stringify(updated));
     }
-
   } catch (err: any) {
     console.error("Claim submit failed:", err.message);
-    setError(err?.response?.data?.error || err.message || "Something went wrong.");
-    setSessionStarted(false);
-    setReport(null);
-
-    // ✅ No tempId if validation failed — safe check
-    setReports((prev) => prev.filter((r) => r.id?.startsWith("temp-")));
+    setError(
+      err?.response?.data?.error || err?.message || "Something went wrong. Please try again."
+    );
+    
+    setReports((prev) => prev.filter((r) => r.id !== tempId));
     if (!user) {
       localStorage.setItem(
         "anon_reports",
-        JSON.stringify(reports.filter((r) => r.id?.startsWith("temp-")))
+        JSON.stringify(reports.filter((r) => r.id !== tempId))
       );
     }
   }
 
   setLoading(false);
 };
-
-
 
 // 🧾 PDF download
 const downloadPDF = () => {
