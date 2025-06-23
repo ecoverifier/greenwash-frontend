@@ -26,7 +26,6 @@ import {
 } from "firebase/firestore";
 
 type ReportType = {
-  restated_claim: string;
   sources: {
     title: string;
     url: string;
@@ -230,11 +229,6 @@ const downloadPDF = () => {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(12);
   doc.setTextColor(33, 37, 41);
-  doc.text("Restated Claim:", 14, y);
-  y += 7;
-  const restatedClaimLines = doc.splitTextToSize(report.restated_claim, 180);
-  doc.text(restatedClaimLines, 14, y);
-  y += restatedClaimLines.length * 7 + 5;
 
   doc.text("Evaluation:", 14, y);
   y += 7;
@@ -615,12 +609,13 @@ useEffect(() => {
 {/* Report Body */}
 {report && (
   <section className="space-y-10">
-
-    {/* Rephrased Claim */}
-    <div className="space-y-2">
-      <h3 className="text-lg font-medium text-gray-900">Restated Claim</h3>
-      <p className="text-base leading-relaxed text-gray-800">{report.restated_claim}</p>
-    </div>
+    {/* Submitted Claim */}
+    <section className="space-y-4">
+      <h2 className="text-xl font-semibold text-gray-900">Claim</h2>
+      <div className="bg-gray-50 border border-gray-200 rounded-md p-5 text-base leading-relaxed">
+        {claim}
+      </div>
+    </section>
 
     {/* Verdict */}
     <div className="space-y-2">
