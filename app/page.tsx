@@ -623,18 +623,15 @@ useEffect(() => {
 {/* Report Body */}
 <section className="space-y-10">
   {/* Analysis Status */}
+{loading && !report && (
   <section className="space-y-4">
     <h2 className="text-xl font-semibold text-gray-900">Analysis Status</h2>
-    {loading ? (
-      <div className="text-gray-500 italic animate-pulse">
-        Analyzing the claim using large language models and reliable sources...
-      </div>
-    ) : error ? (
-      <div className="text-red-600 font-medium">{error}</div>
-    ) : (
-      <div className="text-green-700 text-lg font-medium">✓ Report Generated Successfully</div>
-    )}
+    <div className="text-gray-500 italic animate-pulse">
+      Analyzing the claim using large language models and reliable sources...
+    </div>
   </section>
+)}
+
 
   {/* Conditionally render rest of report */}
   {report && !error && (
