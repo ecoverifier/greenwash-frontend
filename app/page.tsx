@@ -358,12 +358,12 @@ useEffect(() => {
   <div className="flex min-h-screen bg-[#f7f9fb] text-gray-900 font-sans">
     
   <aside
-  className={`fixed top-0 left-0 h-screen bg-white shadow-xl flex flex-col transition-transform duration-300 ease-in-out
+  className={`fixed top-0 left-0 h-screen w-full max-w-xs md:w-64 bg-white shadow-xl flex flex-col transition-transform duration-300 ease-in-out
     ${isSidebarOpen ? "translate-x-0 z-[60]" : "-translate-x-full z-40"}
-    w-full max-w-xs md:w-64 md:translate-x-0 md:z-40 border-r border-gray-100`}
+    md:translate-x-0 md:z-40 border-r border-gray-100`}
 >
   {/* Sidebar Header */}
-  <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
+  <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100 shrink-0">
     <h2 className="text-sm font-semibold text-gray-900 tracking-wide uppercase">
       Reports
     </h2>
@@ -383,8 +383,8 @@ useEffect(() => {
     </button>
   </div>
 
-  {/* Scrollable content + footer */}
-  <div className="flex-1 flex flex-col overflow-y-auto">
+  {/* Scrollable area includes both content and footer */}
+  <div className="flex-1 overflow-y-auto flex flex-col">
     {/* Reports List */}
     <div className="flex-1 px-4 py-3 space-y-2">
       {reports.map((r) => (
@@ -450,8 +450,8 @@ useEffect(() => {
       ))}
     </div>
 
-    {/* Footer (Auth) */}
-    <div className="px-6 py-5 border-t border-gray-100">
+    {/* Sticky Footer inside scrollable container */}
+    <div className="px-6 py-5 border-t border-gray-100 shrink-0 bg-white">
       {user ? (
         <button
           onClick={handleLogout}
