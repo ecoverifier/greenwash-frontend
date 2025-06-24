@@ -334,8 +334,8 @@ useEffect(() => {
       </span>
     </div>
 
-    {/* Right: About button (desktop only) */}
-    <div className="">
+    {/* Right: About button */}
+    <div className="flex gap-5">
       <button
         onClick={() => {
           const about = document.getElementById("about");
@@ -345,7 +345,26 @@ useEffect(() => {
       >
         About
       </button>
+      {user ? (
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-2 text-sm font-medium text-red-500 hover:text-red-600 transition bg-stone-200 hover:bg-stone-300 p-2 rounded-md"
+        >
+          <FiLogOut className="w-4 h-4" />
+          Logout
+        </button>
+      ) : (
+        <button
+          onClick={login}
+          className="flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition bg-stone-200 hover:bg-stone-300 p-2 rounded-md"
+        >
+          <FiLogIn className="w-4 h-4" />
+          Login with Google
+        </button>
+      )}
+      
     </div>
+    
   </header>
 )}
 
@@ -448,27 +467,6 @@ useEffect(() => {
           </button>
         </div>
       ))}
-    </div>
-
-    {/* Sticky Footer inside scrollable container */}
-    <div className="px-6 pb-20 py-5 border-t border-gray-100 shrink-0 bg-white">
-      {user ? (
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-2 text-sm font-medium text-red-500 hover:text-red-600 transition"
-        >
-          <FiLogOut className="w-4 h-4" />
-          Logout
-        </button>
-      ) : (
-        <button
-          onClick={login}
-          className="flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition"
-        >
-          <FiLogIn className="w-4 h-4" />
-          Login with Google
-        </button>
-      )}
     </div>
   </div>
 </aside>
