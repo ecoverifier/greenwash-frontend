@@ -441,7 +441,7 @@ useEffect(() => {
                 deleteDoc(doc(db, "reports", r.id));
               }
             }}
-            className="absolute top-2.5 right-3 text-gray-400 hover:text-red-500 transition-opacity opacity-0 group-hover:opacity-100"
+            className="absolute top-2.5 right-3 text-gray-400 hover:text-red-500 transition-opacity opacity-100 md:opacity-0 md:group-hover:opacity-100"
             title="Delete report"
           >
             <FaTrashAlt className="w-4 h-4" />
