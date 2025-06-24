@@ -339,7 +339,7 @@ useEffect(() => {
       {user ? (
         <button
           onClick={handleLogout}
-          className="flex items-center gap-2 text-sm font-medium text-red-500 hover:text-red-600 transition bg-stone-200 hover:bg-stone-300 p-2 rounded-md"
+          className="flex items-center gap-2 text-sm font-medium text-red-500 hover:text-red-600 transition hover:bg-stone-100 p-2 rounded-md"
         >
           <FiLogOut className="w-4 h-4" />
           Logout
@@ -347,7 +347,7 @@ useEffect(() => {
       ) : (
         <button
           onClick={login}
-          className="flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition bg-stone-200 hover:bg-stone-300 p-2 rounded-md"
+          className="flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition hover:bg-stone-100 p-2 rounded-md"
         >
           <FiLogIn className="w-4 h-4" />
           Login with Google
