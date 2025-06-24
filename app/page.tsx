@@ -41,6 +41,7 @@ type ReportType = {
 export default function Home() {
   // 🔒 Auth state and logout
 const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+const [verifying, setVerifying] = useState(false);
 
 const [sessionStarted, setSessionStarted] = useState(false);
 const [user, setUser] = useState<User | null>(null);
@@ -147,74 +148,84 @@ const login = async () => {
 // 🚀 Submit a claim
 const submit = async (e?: any) => {
   if (e) e.preventDefault();
-  if (!claim.trim()) return;
+  if (!claim.trim() || loading || verifying) return;
 
-  setLoading(true);
   setError("");
+  setVerifying(true);
   setReport(null);
-  setSessionStarted(true);
-
-  const tempId = `temp-${Date.now()}`;
-  const tempReport = { id: tempId, claim, report: null, loading: true };
-  setReports((prev) => [tempReport, ...prev]);
-  setActiveReportId(tempId);
-
-  if (!user) {
-    localStorage.setItem(
-      "anon_reports",
-      JSON.stringify([{ ...tempReport }, ...reports])
-    );
-  }
+  setSessionStarted(false); // still on welcome screen
 
   try {
-    const res = await axios.post(
-      "https://greenwash-api-production.up.railway.app/check",
+    // Step 1: Validate claim
+    const validationRes = await axios.post(
+      "https://greenwash-api-production.up.railway.app/validate",
       { claim }
     );
-    if (res.data.error) {
-      setReport(null);
-      setError(res.data.error); // backend-provided message
-      setSessionStarted(true);  // enter the report UI anyway
+
+    const validation = validationRes.data;
+
+    if (validation.error) {
+      setVerifying(false);
+      setError("Claim invalid. Please try again.");
       return;
     }
-    
-    if (user) {
-      const docRef = await addDoc(collection(db, "reports"), {
-        uid: user.uid,
-        claim,
-        report: res.data,
-        createdAt: new Date().toISOString(),
-      });
-      setActiveReportId(docRef.id);
-    }
 
-    setReport(res.data);
-    setReports((prev) =>
-      prev.map((r) =>
-        r.id === tempId ? { ...r, report: res.data, loading: false } : r
-      )
+    // Step 2: Passed validation — show report UI
+    setVerifying(false);
+    setSessionStarted(true);
+
+    const newId = crypto.randomUUID();
+    const newReportEntry = { id: newId, claim, report: null };
+    setReports((prev) => [newReportEntry, ...prev]);
+    setActiveReportId(newId);
+
+    setLoading(true);
+
+    // Step 3: Analyze claim
+    const analyzeRes = await axios.post(
+      "https://greenwash-api-production.up.railway.app/analyze",
+      { claim }
     );
 
-    if (!user) {
-      const updated = reports.map((r) =>
-        r.id === tempId ? { ...r, report: res.data, loading: false } : r
-      );
-      localStorage.setItem("anon_reports", JSON.stringify(updated));
-    }
-  } catch (err: any) {
-    console.error("Claim submit failed:", err.message);
-    setError("Something went wrong. Please try again.");
-    setReports((prev) => prev.filter((r) => r.id !== tempId));
-    if (!user) {
-      localStorage.setItem(
-        "anon_reports",
-        JSON.stringify(reports.filter((r) => r.id !== tempId))
-      );
-    }
-  }
+    const result = analyzeRes.data;
+    setLoading(false);
 
-  setLoading(false);
+    if (result.error) {
+      setError("Something went wrong during analysis.");
+      return;
+    }
+
+    // Step 4: Inject result into the existing sidebar entry
+    setReports((prev) =>
+      prev.map((r) =>
+        r.id === newId ? { ...r, report: result } : r
+      )
+    );
+    setActiveReportId(newId);
+    setReport(result);
+
+    // Step 5: Persist to storage
+    if (!user) {
+      const updated = [{ id: newId, claim, report: result }, ...reports];
+      localStorage.setItem("anon_reports", JSON.stringify(updated));
+    } else {
+      await addDoc(collection(db, "reports"), {
+        uid: user.uid,
+        claim,
+        report: result,
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+  } catch (err: any) {
+    console.error("Error:", err);
+    setError("Something went wrong. Please try again.");
+    setVerifying(false);
+    setLoading(false);
+  }
 };
+
+
 
 const downloadPDF = () => {
   if (!report) return;
@@ -224,7 +235,7 @@ const downloadPDF = () => {
   let y = 20;
 
   // Title
-  doc.setFont("helvetica", "bold");
+  doc.setFont("Times-Roman", "bold");
   doc.setFontSize(18);
   doc.setTextColor(40, 167, 69);
   doc.text("EcoVerifier Sustainability Report", pageWidth / 2, y, {
@@ -233,18 +244,11 @@ const downloadPDF = () => {
   y += 15;
 
   // General styling
-  doc.setFont("helvetica", "normal");
+  doc.setFont("Times-Roman", "normal");
   doc.setFontSize(12);
   doc.setTextColor(33, 37, 41);
 
-  // Report Summary
-  if (report.report_text) {
-    const summaryLines = doc.splitTextToSize(report.report_text, 180);
-    doc.text("Summary:", 14, y);
-    y += 7;
-    doc.text(summaryLines, 14, y);
-    y += summaryLines.length * 6 + 5;
-  }
+  
 
   // Verdict
   doc.text(`Verdict: ${report.verdict}`, 14, y);
@@ -257,6 +261,15 @@ const downloadPDF = () => {
   doc.text(explanationLines, 14, y);
   y += explanationLines.length * 6 + 5;
 
+  // Report Summary
+  if (report.report_text) {
+    const summaryLines = doc.splitTextToSize(report.report_text, 180);
+    doc.text("Summary:", 14, y);
+    y += 7;
+    doc.text(summaryLines, 14, y);
+    y += summaryLines.length * 6 + 5;
+  }
+
   // Sources Section
   doc.text("Sources:", 14, y);
   y += 8;
@@ -267,11 +280,11 @@ const downloadPDF = () => {
       y = 20;
     }
 
-    doc.setFont("helvetica", "bold");
+    doc.setFont("Times-Roman", "bold");
     doc.text(`${index + 1}. ${source.title}`, 14, y);
     y += 6;
 
-    doc.setFont("helvetica", "normal");
+    doc.setFont("Times-Roman", "normal");
 
     const summary = doc.splitTextToSize(`Summary: ${source.summary}`, 180);
     doc.text(summary, 14, y);
@@ -303,8 +316,8 @@ useEffect(() => {
 
   return (
     <>
-  {!sessionStarted && (
-  <header className="md:ml-64 sticky top-0 z-50 backdrop-blur-md bg-white/70 border-b border-gray-200 px-6 py-4 flex items-center justify-between shadow-sm relative">
+  
+  <header className="md:ml-64 sticky top-0 z-50 bg-white px-6 py-3 flex items-center justify-between relative">
     
     {/* Left: Mobile menu + Brand (desktop) */}
     <div className="flex items-center gap-3">
@@ -357,7 +370,7 @@ useEffect(() => {
     </div>
     
   </header>
-)}
+
 
 
 
@@ -378,6 +391,7 @@ useEffect(() => {
       Reports
     </h2>
     <button
+      disabled={!sessionStarted}
       onClick={() => {
         setReport(null);
         setClaim("");
@@ -385,12 +399,17 @@ useEffect(() => {
         setSessionStarted(false);
         if (window.innerWidth < 768) setIsSidebarOpen(false);
       }}
-      className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:text-emerald-700 transition bg-stone-100 hover:bg-stone-200 p-2 rounded-md"
+      className={`inline-flex items-center gap-1 text-xs font-medium transition p-2 rounded-md ${
+        sessionStarted
+          ? "bg-stone-100 hover:bg-stone-200 text-emerald-600 hover:text-emerald-700"
+          : "bg-stone-50 text-gray-300 cursor-not-allowed"
+      }`}
       title="New Claim"
     >
       <RiChatNewLine className="w-5 h-5" />
       New Chat
     </button>
+
   </div>
 
   {/* Scrollable area includes both content and footer */}
@@ -437,6 +456,10 @@ useEffect(() => {
                     setClaim("");
                     setActiveReportId(null);
                     setSessionStarted(false);
+                    setLoading(false);
+                    setVerifying(false);
+
+                    
                   }
                 }
 
@@ -490,6 +513,19 @@ useEffect(() => {
               EcoVerifier helps you cut through greenwashing by analyzing environmental claims using trusted sources.
             </p>
 
+            {verifying && (
+              <p className="text-sm text-gray-500 animate-pulse mb-4">
+                Verifying claim...
+              </p>
+            )}
+
+            {error && (
+              <p className="text-sm text-red-500 font-medium mb-4">
+                {error}
+              </p>
+            )}
+
+
             <form onSubmit={submit} className="relative mt-12">
   <div className="relative">
     <textarea
@@ -499,9 +535,12 @@ useEffect(() => {
       onKeyDown={(e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
-          submit(e);
+          if (!loading) {
+            submit(e);
+          }
         }
       }}
+      
       className="w-full p-4 border border-gray-300 rounded-lg shadow-md resize-none focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm bg-white"
     />
     {claim.length === 0 && (
@@ -590,16 +629,7 @@ useEffect(() => {
         </div>
       ) : (
         <div className="max-w-3xl mx-auto px-6 py-10 space-y-10 bg-gray-50">
-                {/* Top Row */}
-      <div className="flex justify-between items-center md:hidden mb-4">
-        <button
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="text-emerald-600"
-          aria-label="Toggle Sidebar"
-        >
-          {isSidebarOpen ? <FiX className="w-6 h-6" /> : <FiMenu className="w-6 h-6" />}
-        </button>
-      </div>
+
       <div className="max-w-3xl mx-auto px-6 py-12 space-y-16 text-gray-800 font-sans">
 
 {/* Title */}
