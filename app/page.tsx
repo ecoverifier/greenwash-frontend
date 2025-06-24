@@ -336,15 +336,6 @@ useEffect(() => {
 
     {/* Right: About button */}
     <div className="flex gap-5">
-      <button
-        onClick={() => {
-          const about = document.getElementById("about");
-          about?.scrollIntoView({ behavior: "smooth" });
-        }}
-        className="text-sm text-gray-600 hover:text-emerald-600 transition font-medium"
-      >
-        About
-      </button>
       {user ? (
         <button
           onClick={handleLogout}
