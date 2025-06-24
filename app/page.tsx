@@ -451,7 +451,7 @@ useEffect(() => {
     </div>
 
     {/* Sticky Footer inside scrollable container */}
-    <div className="px-6 pb-10 py-5 border-t border-gray-100 shrink-0 bg-white">
+    <div className="px-6 pb-20 py-5 border-t border-gray-100 shrink-0 bg-white">
       {user ? (
         <button
           onClick={handleLogout}
