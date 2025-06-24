@@ -382,90 +382,97 @@ useEffect(() => {
       New Chat
     </button>
   </div>
-  <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
-  {reports.map((r) => (
-    <div
-      key={r.id}
-      onClick={() => {
-        setReport(r.report);
-        setClaim(r.claim);
-        setActiveReportId(r.id);
-        setSessionStarted(true);
-        if (window.innerWidth < 768) setIsSidebarOpen(false);
-      }}
-      className={`group relative p-3 rounded-md text-sm cursor-pointer transition-all duration-200 shadow-sm ${
-        r.id === activeReportId
-          ? "bg-gray-100 shadow-inner"
-          : "hover:bg-gray-50"
-      }`}
-    >
-      <span className="block pr-6 font-medium text-sm text-gray-800 leading-tight truncate">
-        {r.claim}
-      </span>
 
-      {/* Trash icon – hidden by default, shown on hover */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          setReports((prev) => {
-            const updated = prev.filter((rep) => rep.id !== r.id);
-            const active = r.id === activeReportId;
+  {/* Scrollable content + footer */}
+  <div className="flex-1 flex flex-col overflow-y-auto">
+    {/* Reports List */}
+    <div className="flex-1 px-4 py-3 space-y-2">
+      {reports.map((r) => (
+        <div
+          key={r.id}
+          onClick={() => {
+            setReport(r.report);
+            setClaim(r.claim);
+            setActiveReportId(r.id);
+            setSessionStarted(true);
+            if (window.innerWidth < 768) setIsSidebarOpen(false);
+          }}
+          className={`group relative p-3 rounded-md text-sm cursor-pointer transition-all duration-200 shadow-sm ${
+            r.id === activeReportId
+              ? "bg-gray-100 shadow-inner"
+              : "hover:bg-gray-50"
+          }`}
+        >
+          <span className="block pr-6 font-medium text-sm text-gray-800 leading-tight truncate">
+            {r.claim}
+          </span>
 
-            if (active) {
-              if (updated.length > 0) {
-                const next = updated[0];
-                setReport(next.report);
-                setClaim(next.claim);
-                setActiveReportId(next.id);
-                setSessionStarted(true);
-              } else {
-                setReport(null);
-                setClaim("");
-                setActiveReportId(null);
-                setSessionStarted(false);
+          {/* Trash icon – hidden by default, shown on hover */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setReports((prev) => {
+                const updated = prev.filter((rep) => rep.id !== r.id);
+                const active = r.id === activeReportId;
+
+                if (active) {
+                  if (updated.length > 0) {
+                    const next = updated[0];
+                    setReport(next.report);
+                    setClaim(next.claim);
+                    setActiveReportId(next.id);
+                    setSessionStarted(true);
+                  } else {
+                    setReport(null);
+                    setClaim("");
+                    setActiveReportId(null);
+                    setSessionStarted(false);
+                  }
+                }
+
+                if (!user) {
+                  localStorage.setItem("anon_reports", JSON.stringify(updated));
+                }
+
+                return updated;
+              });
+
+              if (user) {
+                deleteDoc(doc(db, "reports", r.id));
               }
-            }
-
-            if (!user) {
-              localStorage.setItem("anon_reports", JSON.stringify(updated));
-            }
-
-            return updated;
-          });
-
-          if (user) {
-            deleteDoc(doc(db, "reports", r.id));
-          }
-        }}
-        className="absolute top-2.5 right-3 text-gray-400 hover:text-red-500 transition-opacity opacity-0 group-hover:opacity-100"
-        title="Delete report"
-      >
-        <FaTrashAlt className="w-4 h-4" />
-      </button>
+            }}
+            className="absolute top-2.5 right-3 text-gray-400 hover:text-red-500 transition-opacity opacity-0 group-hover:opacity-100"
+            title="Delete report"
+          >
+            <FaTrashAlt className="w-4 h-4" />
+          </button>
+        </div>
+      ))}
     </div>
-  ))}
-</div>
-  {/* Footer (Auth) */}
-  <div className="px-6 py-5 border-t border-gray-100 mt-auto">
-    {user ? (
-      <button
-        onClick={handleLogout}
-        className="flex items-center gap-2 text-sm font-medium text-red-500 hover:text-red-600 transition"
-      >
-        <FiLogOut className="w-4 h-4" />
-        Logout
-      </button>
-    ) : (
-      <button
-        onClick={login}
-        className="flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition"
-      >
-        <FiLogIn className="w-4 h-4" />
-        Login with Google
-      </button>
-    )}
+
+    {/* Footer (Auth) */}
+    <div className="px-6 py-5 border-t border-gray-100">
+      {user ? (
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-2 text-sm font-medium text-red-500 hover:text-red-600 transition"
+        >
+          <FiLogOut className="w-4 h-4" />
+          Logout
+        </button>
+      ) : (
+        <button
+          onClick={login}
+          className="flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition"
+        >
+          <FiLogIn className="w-4 h-4" />
+          Login with Google
+        </button>
+      )}
+    </div>
   </div>
 </aside>
+
 
 
 
