@@ -521,7 +521,7 @@ useEffect(() => {
 
             {error && (
               <p className="text-sm text-red-500 font-medium mb-4">
-                {error}
+                "Please enter a valid sustainability claim. An example of a valid sustainability claim is: 'Apple will be carbon neutral by 2040.'"
               </p>
             )}
 
