@@ -663,62 +663,63 @@ useEffect(() => {
 
 {report && !error && (
   <>
-    {/* Verdict */}
-    <div className="space-y-2">
-      <h3 className="text-lg font-medium text-gray-900">Verdict</h3>
-      <p className="text-xl font-semibold text-gray-900">{report.verdict}</p>
+    {/* Verdict + Confidence container */}
+<div className="flex flex-col md:flex-row md:items-start md:gap-12 space-y-8 md:space-y-0">
+  {/* Verdict */}
+  <div className="md:w-1/2 space-y-2">
+    <h3 className="text-lg font-medium text-gray-900">Verdict</h3>
+    <p className="text-xl font-semibold text-gray-900">{report.verdict}</p>
+  </div>
+
+  {/* Confidence */}
+  <div className="md:w-1/2 space-y-2">
+    <h3 className="text-lg font-medium text-gray-900">Confidence</h3>
+    <div className="flex items-center gap-6">
+      {/* Large Confidence Circle */}
+      <svg width="100" height="100" viewBox="0 0 36 36">
+        <circle
+          cx="18"
+          cy="18"
+          r="16"
+          fill="none"
+          stroke="#e5e7eb"
+          strokeWidth="3"
+        />
+        <circle
+          cx="18"
+          cy="18"
+          r="16"
+          fill="none"
+          stroke={`hsl(${(report.confidence_score / 100) * 120}, 100%, 40%)`}
+          strokeWidth="3"
+          strokeDasharray="100"
+          strokeDashoffset={100 - report.confidence_score}
+          strokeLinecap="round"
+          transform="rotate(-90 18 18)"
+          style={{
+            transition: "stroke-dashoffset 1s ease, stroke 1s ease"
+          }}
+        />
+        <text
+          x="18"
+          y="21"
+          textAnchor="middle"
+          fill="#111827"
+          fontSize="10"
+          fontWeight="bold"
+        >
+          {report.confidence_score}%
+        </text>
+      </svg>
+
+      {/* Reasoning */}
+      <p className="text-base text-gray-700 max-w-xs">
+        {report.confidence_reasoning}
+      </p>
     </div>
-
-    {/* Confidence */}
-<div className="space-y-2">
-  <h3 className="text-lg font-medium text-gray-900">Confidence</h3>
-  <div className="flex items-center gap-6">
-    {/* Large Confidence Circle */}
-    <svg width="100" height="100" viewBox="0 0 36 36">
-      {/* Background Ring */}
-      <circle
-        cx="18"
-        cy="18"
-        r="16"
-        fill="none"
-        stroke="#e5e7eb"
-        strokeWidth="3"
-      />
-      {/* Animated Progress Arc */}
-      <circle
-        cx="18"
-        cy="18"
-        r="16"
-        fill="none"
-        stroke={`hsl(${(report.confidence_score / 100) * 120}, 100%, 40%)`}
-        strokeWidth="3"
-        strokeDasharray="100"
-        strokeDashoffset={100 - report.confidence_score}
-        strokeLinecap="round"
-        transform="rotate(-90 18 18)"
-        style={{
-          transition: "stroke-dashoffset 1s ease, stroke 1s ease"
-        }}
-      />
-      {/* Score Text */}
-      <text
-        x="18"
-        y="21"
-        textAnchor="middle"
-        fill="#111827"
-        fontSize="10"
-        fontWeight="bold"
-      >
-        {report.confidence_score}%
-      </text>
-    </svg>
-
-    {/* Reasoning Text */}
-    <p className="text-base text-gray-700 max-w-xs">
-      {report.confidence_reasoning}
-    </p>
   </div>
 </div>
+
 
 
 
