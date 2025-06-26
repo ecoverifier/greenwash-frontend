@@ -30,12 +30,13 @@ type ReportType = {
     title: string;
     url: string;
     summary: string;
-    strengths: string;
-    limitations: string;
+    claim_connection: string;
+
   }[];
-  verdict: string;
-  report_text: string;
-  explanation: string;
+    verdict: string;
+    confidence_score: number;
+    confidence_reasoning: string;
+    explanation: string;
 };
 
 export default function Home() {
@@ -261,14 +262,6 @@ const downloadPDF = () => {
   doc.text(explanationLines, 14, y);
   y += explanationLines.length * 6 + 5;
 
-  // Report Summary
-  if (report.report_text) {
-    const summaryLines = doc.splitTextToSize(report.report_text, 180);
-    doc.text("Summary:", 14, y);
-    y += 7;
-    doc.text(summaryLines, 14, y);
-    y += summaryLines.length * 6 + 5;
-  }
 
   // Sources Section
   doc.text("Sources:", 14, y);
@@ -290,13 +283,6 @@ const downloadPDF = () => {
     doc.text(summary, 14, y);
     y += summary.length * 6;
 
-    const strengths = doc.splitTextToSize(`Strengths: ${source.strengths}`, 180);
-    doc.text(strengths, 14, y);
-    y += strengths.length * 6;
-
-    const limitations = doc.splitTextToSize(`Limitations: ${source.limitations}`, 180);
-    doc.text(limitations, 14, y);
-    y += limitations.length * 6 + 5;
   });
 
   doc.save("eco_verifier_report.pdf");
@@ -659,64 +645,63 @@ useEffect(() => {
 )}
 
 
-  {/* Conditionally render rest of report */}
-  {report && !error && (
-    <>
-      {/* Verdict */}
-      <div className="space-y-2">
-        <h3 className="text-lg font-medium text-gray-900">Verdict</h3>
-        <p className="text-xl font-semibold text-gray-900">{report.verdict}</p>
-      </div>
+{report && !error && (
+  <>
+    {/* Verdict */}
+    <div className="space-y-2">
+      <h3 className="text-lg font-medium text-gray-900">Verdict</h3>
+      <p className="text-xl font-semibold text-gray-900">{report.verdict}</p>
+    </div>
 
-      {/* Explanation */}
-      <div className="space-y-2">
-        <h3 className="text-lg font-medium text-gray-900">Explanation</h3>
-        <p className="text-base leading-relaxed text-gray-700">{report.explanation}</p>
-      </div>
+    {/* Confidence */}
+    <div className="space-y-2">
+      <h3 className="text-lg font-medium text-gray-900">Confidence</h3>
+      <p className="text-base text-gray-700">
+        <strong>{report.confidence_score}%</strong> — {report.confidence_reasoning}
+      </p>
+    </div>
 
-      {/* Explanation */}
-      <div className="space-y-2">
-        <h3 className="text-lg font-medium text-gray-900">Summary</h3>
-        <p className="text-base leading-relaxed text-gray-700">{report.report_text}</p>
-      </div>
+    {/* Explanation */}
+    <div className="space-y-2">
+      <h3 className="text-lg font-medium text-gray-900">Explanation</h3>
+      <p className="text-base leading-relaxed text-gray-700">{report.explanation}</p>
+    </div>
 
-      {/* Sources */}
-      <div className="space-y-6">
-        <h3 className="text-lg font-medium text-gray-900">Verified Sources</h3>
-        <ul className="space-y-6 list-none">
-          {report.sources.map((source, idx) => (
-            <li key={idx} className="space-y-2 border-t pt-4">
-              <a
-                href={source.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 font-semibold hover:underline"
-              >
-                {source.title}
-              </a>
-              <p className="text-sm text-gray-700">{source.summary}</p>
-              <p className="text-sm">
-                <span className="font-semibold">Strengths:</span> {source.strengths}
-              </p>
-              <p className="text-sm">
-                <span className="font-semibold">Limitations:</span> {source.limitations}
-              </p>
-            </li>
-          ))}
-        </ul>
-      </div>
+    {/* Sources */}
+    <div className="space-y-6">
+      <h3 className="text-lg font-medium text-gray-900">Verified Sources</h3>
+      <ul className="space-y-6 list-none">
+        {report.sources.map((source, idx) => (
+          <li key={idx} className="space-y-2 border-t pt-4">
+            <a
+              href={source.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 font-semibold hover:underline"
+            >
+              {source.title}
+            </a>
+            <p className="text-sm text-gray-700">{source.summary}</p>
+            <p className="text-sm text-gray-600 italic">
+              Why this source? {source.claim_connection}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </div>
 
-      {/* Download Button */}
-      <div className="pt-8">
-        <button
-          onClick={downloadPDF}
-          className="bg-gray-900 hover:bg-black text-white px-6 py-2 rounded-md text-sm font-medium transition-colors"
-        >
-          Download Full Report (PDF)
-        </button>
-      </div>
-    </>
-  )}
+    {/* Download Button */}
+    <div className="pt-8">
+      <button
+        onClick={downloadPDF}
+        className="bg-gray-900 hover:bg-black text-white px-6 py-2 rounded-md text-sm font-medium transition-colors"
+      >
+        Download Full Report (PDF)
+      </button>
+    </div>
+  </>
+)}
+
 </section>
 
 </div>
