@@ -655,11 +655,51 @@ useEffect(() => {
 
     {/* Confidence */}
     <div className="space-y-2">
-      <h3 className="text-lg font-medium text-gray-900">Confidence</h3>
-      <p className="text-base text-gray-700">
-        <strong>{report.confidence_score}%</strong> — {report.confidence_reasoning}
-      </p>
+      <h3 className="text-lg font-medium text-gray-900">Confidence in Verdict</h3>
+      <div className="flex items-center gap-4">
+        {/* Animated Confidence Circle */}
+        <svg width="64" height="64" viewBox="0 0 36 36" className="transform -rotate-90">
+          <circle
+            cx="18"
+            cy="18"
+            r="16"
+            fill="none"
+            stroke="#e5e7eb"
+            strokeWidth="3"
+          />
+          <circle
+            cx="18"
+            cy="18"
+            r="16"
+            fill="none"
+            stroke={`hsl(${(report.confidence_score / 100) * 120}, 100%, 40%)`}
+            strokeWidth="3"
+            strokeDasharray="100"
+            strokeDashoffset={100 - report.confidence_score}
+            strokeLinecap="round"
+            style={{
+              transition: "stroke-dashoffset 1s ease, stroke 1s ease"
+            }}
+          />
+          <text
+            x="18"
+            y="20.5"
+            textAnchor="middle"
+            fill="#111827"
+            fontSize="8"
+            fontWeight="bold"
+          >
+            {report.confidence_score}%
+          </text>
+        </svg>
+
+        {/* Confidence Reasoning */}
+        <p className="text-base text-gray-700">
+          {report.confidence_reasoning}
+        </p>
+      </div>
     </div>
+
 
     {/* Explanation */}
     <div className="space-y-2">
