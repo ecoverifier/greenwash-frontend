@@ -672,10 +672,10 @@ useEffect(() => {
     {/* Confidence */}
 <div className="space-y-2">
   <h3 className="text-lg font-medium text-gray-900">Confidence</h3>
-  <div className="flex items-center gap-4">
-    {/* Animated Confidence Circle */}
-    <svg width="64" height="64" viewBox="0 0 36 36">
-      {/* Background ring */}
+  <div className="flex items-center gap-6">
+    {/* Large Confidence Circle */}
+    <svg width="100" height="100" viewBox="0 0 36 36">
+      {/* Background Ring */}
       <circle
         cx="18"
         cy="18"
@@ -684,7 +684,7 @@ useEffect(() => {
         stroke="#e5e7eb"
         strokeWidth="3"
       />
-      {/* Animated arc */}
+      {/* Animated Progress Arc */}
       <circle
         cx="18"
         cy="18"
@@ -700,25 +700,26 @@ useEffect(() => {
           transition: "stroke-dashoffset 1s ease, stroke 1s ease"
         }}
       />
-      {/* Centered percentage text */}
+      {/* Score Text */}
       <text
         x="18"
-        y="20.5"
+        y="21"
         textAnchor="middle"
         fill="#111827"
-        fontSize="8"
+        fontSize="10"
         fontWeight="bold"
       >
         {report.confidence_score}%
       </text>
     </svg>
 
-    {/* Confidence Reasoning */}
-    <p className="text-base text-gray-700">
+    {/* Reasoning Text */}
+    <p className="text-base text-gray-700 max-w-xs">
       {report.confidence_reasoning}
     </p>
   </div>
 </div>
+
 
 
 
