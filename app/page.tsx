@@ -236,7 +236,7 @@ const downloadPDF = () => {
   let y = 20;
 
   // Title
-  doc.setFont("Times-Roman", "bold");
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
   doc.setTextColor(40, 167, 69);
   doc.text("EcoVerifier Sustainability Report", pageWidth / 2, y, {
@@ -245,26 +245,36 @@ const downloadPDF = () => {
   y += 15;
 
   // General styling
-  doc.setFont("Times-Roman", "normal");
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(12);
   doc.setTextColor(33, 37, 41);
 
-  
-
   // Verdict
-  doc.text(`Verdict: ${report.verdict}`, 14, y);
+  doc.setFont("helvetica", "bold");
+  doc.text("Verdict:", 14, y);
+  doc.setFont("helvetica", "normal");
+  doc.text(report.verdict, 40, y);
+  y += 10;
+
+  // Confidence
+  doc.setFont("helvetica", "bold");
+  doc.text("Confidence:", 14, y);
+  doc.setFont("helvetica", "normal");
+  doc.text(`${report.confidence_score}% — ${report.confidence_reasoning}`, 40, y);
   y += 10;
 
   // Explanation
-  const explanationLines = doc.splitTextToSize(report.explanation, 180);
+  doc.setFont("helvetica", "bold");
   doc.text("Explanation:", 14, y);
   y += 7;
+  doc.setFont("helvetica", "normal");
+  const explanationLines = doc.splitTextToSize(report.explanation, 180);
   doc.text(explanationLines, 14, y);
   y += explanationLines.length * 6 + 5;
 
-
-  // Sources Section
-  doc.text("Sources:", 14, y);
+  // Sources
+  doc.setFont("helvetica", "bold");
+  doc.text("Verified Sources:", 14, y);
   y += 8;
 
   report.sources.forEach((source, index) => {
@@ -273,20 +283,26 @@ const downloadPDF = () => {
       y = 20;
     }
 
-    doc.setFont("Times-Roman", "bold");
+    // Title
+    doc.setFont("helvetica", "bold");
     doc.text(`${index + 1}. ${source.title}`, 14, y);
     y += 6;
 
-    doc.setFont("Times-Roman", "normal");
-
+    // Summary
+    doc.setFont("helvetica", "normal");
     const summary = doc.splitTextToSize(`Summary: ${source.summary}`, 180);
     doc.text(summary, 14, y);
     y += summary.length * 6;
 
+    // Claim Connection (Why this source)
+    const why = doc.splitTextToSize(`Why this source? ${source.claim_connection}`, 180);
+    doc.text(why, 14, y);
+    y += why.length * 6 + 4;
   });
 
   doc.save("eco_verifier_report.pdf");
 };
+
 const [showScrollButton, setShowScrollButton] = useState(true);
 
 useEffect(() => {
@@ -654,51 +670,56 @@ useEffect(() => {
     </div>
 
     {/* Confidence */}
-    <div className="space-y-2">
-      <h3 className="text-lg font-medium text-gray-900">Confidence in Verdict</h3>
-      <div className="flex items-center gap-4">
-        {/* Animated Confidence Circle */}
-        <svg width="64" height="64" viewBox="0 0 36 36" className="transform -rotate-90">
-          <circle
-            cx="18"
-            cy="18"
-            r="16"
-            fill="none"
-            stroke="#e5e7eb"
-            strokeWidth="3"
-          />
-          <circle
-            cx="18"
-            cy="18"
-            r="16"
-            fill="none"
-            stroke={`hsl(${(report.confidence_score / 100) * 120}, 100%, 40%)`}
-            strokeWidth="3"
-            strokeDasharray="100"
-            strokeDashoffset={100 - report.confidence_score}
-            strokeLinecap="round"
-            style={{
-              transition: "stroke-dashoffset 1s ease, stroke 1s ease"
-            }}
-          />
-          <text
-            x="18"
-            y="20.5"
-            textAnchor="middle"
-            fill="#111827"
-            fontSize="8"
-            fontWeight="bold"
-          >
-            {report.confidence_score}%
-          </text>
-        </svg>
+<div className="space-y-2">
+  <h3 className="text-lg font-medium text-gray-900">Confidence</h3>
+  <div className="flex items-center gap-4">
+    {/* Animated Confidence Circle */}
+    <svg width="64" height="64" viewBox="0 0 36 36">
+      {/* Background ring */}
+      <circle
+        cx="18"
+        cy="18"
+        r="16"
+        fill="none"
+        stroke="#e5e7eb"
+        strokeWidth="3"
+      />
+      {/* Animated arc */}
+      <circle
+        cx="18"
+        cy="18"
+        r="16"
+        fill="none"
+        stroke={`hsl(${(report.confidence_score / 100) * 120}, 100%, 40%)`}
+        strokeWidth="3"
+        strokeDasharray="100"
+        strokeDashoffset={100 - report.confidence_score}
+        strokeLinecap="round"
+        transform="rotate(-90 18 18)"
+        style={{
+          transition: "stroke-dashoffset 1s ease, stroke 1s ease"
+        }}
+      />
+      {/* Centered percentage text */}
+      <text
+        x="18"
+        y="20.5"
+        textAnchor="middle"
+        fill="#111827"
+        fontSize="8"
+        fontWeight="bold"
+      >
+        {report.confidence_score}%
+      </text>
+    </svg>
 
-        {/* Confidence Reasoning */}
-        <p className="text-base text-gray-700">
-          {report.confidence_reasoning}
-        </p>
-      </div>
-    </div>
+    {/* Confidence Reasoning */}
+    <p className="text-base text-gray-700">
+      {report.confidence_reasoning}
+    </p>
+  </div>
+</div>
+
 
 
     {/* Explanation */}
