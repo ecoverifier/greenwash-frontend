@@ -25,19 +25,33 @@ import {
   orderBy,
 } from "firebase/firestore";
 
-type ReportType = {
-  sources: {
-    title: string;
-    url: string;
-    summary: string;
-    claim_connection: string;
-
-  }[];
-    verdict: string;
-    confidence_score: number;
-    confidence_reasoning: string;
-    explanation: string;
+type ESGFinding = {
+  date: string;
+  title: string;
+  impact: "high" | "medium" | "low";
+  direction: "positive" | "negative" | "unclear";
+  source_type: string;
+  summary: string;
+  source_url: string;
 };
+
+type ReportType = {
+  company: string;
+  eco_audit: {
+    last_audit_date: string;
+    total_events: number;
+    high_risk_flag_count: number;
+    concern_level: string;
+    summary: string;
+    findings: ESGFinding[];
+  };
+  greenscore: {
+    score: number;
+    factors: string[];
+    note: string;
+  };
+};
+
 
 export default function Home() {
   // 🔒 Auth state and logout
@@ -53,7 +67,7 @@ const handleLogout = async () => {
     await signOut(auth);
     setUser(null);
     setReport(null);
-    setClaim("");
+    setCompany("");
     setSessionStarted(false);
     setActiveReportId(null);
   } catch (err) {
@@ -64,16 +78,16 @@ const handleLogout = async () => {
 
 // ✅ Placeholder typing animation (cleaned and simplified)
 const examples = [
-  "e.g. Amazon says it will be net-zero by 2040",
-  "e.g. Apple will stop using plastic packaging",
-  "e.g. Shell claims 50% carbon reduction by 2035",
+  "e.g. Amazon",
+  "e.g. Apple",
+  "e.g. Shell",
 ];
 
 const [animatedPlaceholder, setAnimatedPlaceholder] = useState("");
 const [exampleIndex, setExampleIndex] = useState(0);
 const [charIndex, setCharIndex] = useState(0);
 const [isDeleting, setIsDeleting] = useState(false);
-const [claim, setClaim] = useState("");
+const [company, setCompany] = useState("");
 
 useEffect(() => {
   const current = examples[exampleIndex];
@@ -149,54 +163,24 @@ const login = async () => {
 // 🚀 Submit a claim
 const submit = async (e?: any) => {
   if (e) e.preventDefault();
-  if (!claim.trim() || loading || verifying) return;
+  if (!company.trim() || loading) return;
 
   setError("");
-  setVerifying(true);
+  setLoading(true);
   setReport(null);
-  setSessionStarted(false); // still on welcome screen
+  setSessionStarted(true);
+
+  const newId = crypto.randomUUID();
+  const newReportEntry = { id: newId, company, report: null };
+  setReports((prev) => [newReportEntry, ...prev]);
+  setActiveReportId(newId);
 
   try {
-    // Step 1: Validate claim
-    const validationRes = await axios.post(
-      "https://greenwash-api-production.up.railway.app/validate",
-      { claim }
+    const res = await axios.get(
+      `https://greenwash-api-production.up.railway.app/generate-audit?company=${encodeURIComponent(company)}`
     );
+    const result = res.data;
 
-    const validation = validationRes.data;
-
-    if (validation.error) {
-      setVerifying(false);
-      setError("Claim invalid. Please try again.");
-      return;
-    }
-
-    // Step 2: Passed validation — show report UI
-    setVerifying(false);
-    setSessionStarted(true);
-
-    const newId = crypto.randomUUID();
-    const newReportEntry = { id: newId, claim, report: null };
-    setReports((prev) => [newReportEntry, ...prev]);
-    setActiveReportId(newId);
-
-    setLoading(true);
-
-    // Step 3: Analyze claim
-    const analyzeRes = await axios.post(
-      "https://greenwash-api-production.up.railway.app/analyze",
-      { claim }
-    );
-
-    const result = analyzeRes.data;
-    setLoading(false);
-
-    if (result.error) {
-      setError("Something went wrong during analysis.");
-      return;
-    }
-
-    // Step 4: Inject result into the existing sidebar entry
     setReports((prev) =>
       prev.map((r) =>
         r.id === newId ? { ...r, report: result } : r
@@ -205,103 +189,29 @@ const submit = async (e?: any) => {
     setActiveReportId(newId);
     setReport(result);
 
-    // Step 5: Persist to storage
     if (!user) {
-      const updated = [{ id: newId, claim, report: result }, ...reports];
+      const updated = [{ id: newId, company, report: result }, ...reports];
       localStorage.setItem("anon_reports", JSON.stringify(updated));
     } else {
       await addDoc(collection(db, "reports"), {
         uid: user.uid,
-        claim,
+        company,
         report: result,
         createdAt: new Date().toISOString(),
       });
     }
-
-  } catch (err: any) {
+  } catch (err) {
     console.error("Error:", err);
-    setError("Something went wrong. Please try again.");
-    setVerifying(false);
+    setError("Failed to retrieve audit report.");
+  } finally {
     setLoading(false);
   }
 };
 
 
 
-const downloadPDF = () => {
-  if (!report) return;
 
-  const doc = new jsPDF();
-  const pageWidth = doc.internal.pageSize.getWidth();
-  let y = 20;
 
-  // Title
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.setTextColor(40, 167, 69);
-  doc.text("EcoVerifier Sustainability Report", pageWidth / 2, y, {
-    align: "center",
-  });
-  y += 15;
-
-  // General styling
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(12);
-  doc.setTextColor(33, 37, 41);
-
-  // Verdict
-  doc.setFont("helvetica", "bold");
-  doc.text("Verdict:", 14, y);
-  doc.setFont("helvetica", "normal");
-  doc.text(report.verdict, 40, y);
-  y += 10;
-
-  // Confidence
-  doc.setFont("helvetica", "bold");
-  doc.text("Confidence:", 14, y);
-  doc.setFont("helvetica", "normal");
-  doc.text(`${report.confidence_score}% — ${report.confidence_reasoning}`, 40, y);
-  y += 10;
-
-  // Explanation
-  doc.setFont("helvetica", "bold");
-  doc.text("Explanation:", 14, y);
-  y += 7;
-  doc.setFont("helvetica", "normal");
-  const explanationLines = doc.splitTextToSize(report.explanation, 180);
-  doc.text(explanationLines, 14, y);
-  y += explanationLines.length * 6 + 5;
-
-  // Sources
-  doc.setFont("helvetica", "bold");
-  doc.text("Verified Sources:", 14, y);
-  y += 8;
-
-  report.sources.forEach((source, index) => {
-    if (y > 270) {
-      doc.addPage();
-      y = 20;
-    }
-
-    // Title
-    doc.setFont("helvetica", "bold");
-    doc.text(`${index + 1}. ${source.title}`, 14, y);
-    y += 6;
-
-    // Summary
-    doc.setFont("helvetica", "normal");
-    const summary = doc.splitTextToSize(`Summary: ${source.summary}`, 180);
-    doc.text(summary, 14, y);
-    y += summary.length * 6;
-
-    // Claim Connection (Why this source)
-    const why = doc.splitTextToSize(`Why this source? ${source.claim_connection}`, 180);
-    doc.text(why, 14, y);
-    y += why.length * 6 + 4;
-  });
-
-  doc.save("eco_verifier_report.pdf");
-};
 
 const [showScrollButton, setShowScrollButton] = useState(true);
 
@@ -396,7 +306,7 @@ useEffect(() => {
       disabled={!sessionStarted}
       onClick={() => {
         setReport(null);
-        setClaim("");
+        setCompany("");
         setActiveReportId(null);
         setSessionStarted(false);
         if (window.innerWidth < 768) setIsSidebarOpen(false);
@@ -423,7 +333,7 @@ useEffect(() => {
           key={r.id}
           onClick={() => {
             setReport(r.report);
-            setClaim(r.claim);
+            setCompany(r.company);
             setActiveReportId(r.id);
             setSessionStarted(true);
             if (window.innerWidth < 768) setIsSidebarOpen(false);
@@ -435,7 +345,7 @@ useEffect(() => {
           }`}
         >
           <span className="block pr-6 font-medium text-sm text-gray-800 leading-tight truncate">
-            {r.claim}
+            {r.company}
           </span>
 
           {/* Trash icon – hidden by default, shown on hover */}
@@ -450,12 +360,12 @@ useEffect(() => {
                   if (updated.length > 0) {
                     const next = updated[0];
                     setReport(next.report);
-                    setClaim(next.claim);
+                    setCompany(next.claim);
                     setActiveReportId(next.id);
                     setSessionStarted(true);
                   } else {
                     setReport(null);
-                    setClaim("");
+                    setCompany("");
                     setActiveReportId(null);
                     setSessionStarted(false);
                     setLoading(false);
@@ -509,7 +419,7 @@ useEffect(() => {
           
           <div className="space-y-6 min-h-screen">
             <h1 className="text-4xl md:text-6xl font-extrabold text-emerald-700 leading-tight">
-              Verify Sustainability Claims in Seconds.
+              Check your portfolios for sustainability.
             </h1>
             <p className="text-gray-600 text-md md:text-lg max-w-xl mx-auto">
               EcoVerifier helps you cut through greenwashing by analyzing environmental claims using trusted sources.
@@ -517,7 +427,7 @@ useEffect(() => {
 
             {verifying && (
               <p className="text-sm text-gray-500 animate-pulse mb-4">
-                Verifying claim...
+                Analyzing company...
               </p>
             )}
 
@@ -532,8 +442,8 @@ useEffect(() => {
   <div className="relative">
     <textarea
       rows={4}
-      value={claim}
-      onChange={(e) => setClaim(e.target.value)}
+      value={company}
+      onChange={(e) => setCompany(e.target.value)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
@@ -545,7 +455,7 @@ useEffect(() => {
       
       className="w-full p-4 border border-gray-300 rounded-lg shadow-md resize-none focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm bg-white"
     />
-    {claim.length === 0 && (
+    {company.length === 0 && (
       <div className="absolute top-4 left-4 text-gray-400 pointer-events-none text-sm">
         {animatedPlaceholder}
       </div>
@@ -644,127 +554,102 @@ useEffect(() => {
 <section className="space-y-4">
   <h2 className="text-xl font-semibold text-gray-900">Submitted Claim</h2>
   <div className="bg-gray-50 border border-gray-200 rounded-md p-5 text-base leading-relaxed">
-    {claim}
+    {company}
   </div>
 </section>
 
 {/* Report Body */}
 <section className="space-y-10">
-  {/* Analysis Status */}
-{loading && !report && (
-  <section className="space-y-4">
-    <h2 className="text-xl font-semibold text-gray-900">Analysis Status</h2>
-    <div className="text-gray-500 italic animate-pulse">
-      Analyzing the claim using large language models and reliable sources...
-    </div>
-  </section>
-)}
+  {/* Loading State */}
+  {loading && !report && (
+    <section className="space-y-4">
+      <h2 className="text-xl font-semibold text-gray-900">Audit Status</h2>
+      <div className="text-gray-500 italic animate-pulse">
+        Auditing the company using environmental news and AI reasoning...
+      </div>
+    </section>
+  )}
 
+  {/* Report Display */}
+  {report && !error && (
+    <>
+      {/* Company Info */}
+      <div className="space-y-2">
+        <h3 className="text-lg font-medium text-gray-900">Company Audited</h3>
+        <p className="text-xl font-semibold text-gray-900">{report.company}</p>
+      </div>
 
-{report && !error && (
-  <>
-    {/* Verdict */}
-    <div className="space-y-2">
-      <h3 className="text-lg font-medium text-gray-900">Verdict</h3>
-      <p className="text-xl font-semibold text-gray-900">{report.verdict}</p>
-    </div>
+      {/* GreenScore Visualization */}
+      <div className="space-y-2">
+        <h3 className="text-lg font-medium text-gray-900">GreenScore</h3>
+        <div className="flex items-center gap-6">
+          <svg width="100" height="100" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="16" fill="none" stroke="#e5e7eb" strokeWidth="3" />
+            <circle
+              cx="18"
+              cy="18"
+              r="16"
+              fill="none"
+              stroke={`hsl(${(report.greenscore.score / 100) * 120}, 100%, 40%)`}
+              strokeWidth="3"
+              strokeDasharray="100"
+              strokeDashoffset={100 - report.greenscore.score}
+              strokeLinecap="round"
+              transform="rotate(-90 18 18)"
+              style={{ transition: "stroke-dashoffset 1s ease, stroke 1s ease" }}
+            />
+            <text x="18" y="21" textAnchor="middle" fill="#111827" fontSize="10" fontWeight="bold">
+              {report.greenscore.score}%
+            </text>
+          </svg>
+          <ul className="text-sm text-gray-700 list-disc pl-5 space-y-1">
+            {report.greenscore.factors.map((f, i) => (
+              <li key={i}>{f}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
 
-    {/* Confidence */}
-<div className="space-y-2">
-  <h3 className="text-lg font-medium text-gray-900">Confidence</h3>
-  <div className="flex items-center gap-6">
-    {/* Large Confidence Circle */}
-    <svg width="100" height="100" viewBox="0 0 36 36">
-      {/* Background Ring */}
-      <circle
-        cx="18"
-        cy="18"
-        r="16"
-        fill="none"
-        stroke="#e5e7eb"
-        strokeWidth="3"
-      />
-      {/* Animated Progress Arc */}
-      <circle
-        cx="18"
-        cy="18"
-        r="16"
-        fill="none"
-        stroke={`hsl(${(report.confidence_score / 100) * 120}, 100%, 40%)`}
-        strokeWidth="3"
-        strokeDasharray="100"
-        strokeDashoffset={100 - report.confidence_score}
-        strokeLinecap="round"
-        transform="rotate(-90 18 18)"
-        style={{
-          transition: "stroke-dashoffset 1s ease, stroke 1s ease"
-        }}
-      />
-      {/* Score Text */}
-      <text
-        x="18"
-        y="21"
-        textAnchor="middle"
-        fill="#111827"
-        fontSize="10"
-        fontWeight="bold"
-      >
-        {report.confidence_score}%
-      </text>
-    </svg>
+      {/* Audit Summary */}
+      <div className="space-y-2">
+        <h3 className="text-lg font-medium text-gray-900">Audit Summary</h3>
+        <div className="text-base text-gray-700 leading-relaxed">
+          <p><strong>Total Events:</strong> {report.eco_audit.total_events}</p>
+          <p><strong>High-Risk Issues:</strong> {report.eco_audit.high_risk_flag_count}</p>
+          <p><strong>Concern Level:</strong> {report.eco_audit.concern_level}</p>
+          <p className="mt-2">{report.eco_audit.summary}</p>
+        </div>
+      </div>
 
-    {/* Reasoning Text */}
-    <p className="text-base text-gray-700 max-w-xs">
-      {report.confidence_reasoning}
-    </p>
-  </div>
-</div>
+      {/* ESG Findings */}
+      <div className="space-y-6">
+        <h3 className="text-lg font-medium text-gray-900">ESG Findings</h3>
+        <ul className="space-y-6 list-none">
+          {report.eco_audit.findings.map((finding, idx) => (
+            <li key={idx} className="space-y-2 border-t pt-4">
+              <a
+                href={finding.source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 font-semibold hover:underline"
+              >
+                {finding.title}
+              </a>
+              <p className="text-sm text-gray-700">{finding.summary}</p>
+              <p className="text-sm text-gray-600 italic">
+                [{finding.source_type}] {finding.impact} impact, {finding.direction} direction — {finding.date}
+              </p>
+            </li>
+          ))}
+        </ul>
+      </div>
 
-
-
-
-    {/* Explanation */}
-    <div className="space-y-2">
-      <h3 className="text-lg font-medium text-gray-900">Explanation</h3>
-      <p className="text-base leading-relaxed text-gray-700">{report.explanation}</p>
-    </div>
-
-    {/* Sources */}
-    <div className="space-y-6">
-      <h3 className="text-lg font-medium text-gray-900">Verified Sources</h3>
-      <ul className="space-y-6 list-none">
-        {report.sources.map((source, idx) => (
-          <li key={idx} className="space-y-2 border-t pt-4">
-            <a
-              href={source.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 font-semibold hover:underline"
-            >
-              {source.title}
-            </a>
-            <p className="text-sm text-gray-700">{source.summary}</p>
-            <p className="text-sm text-gray-600 italic">
-              Why this source? {source.claim_connection}
-            </p>
-          </li>
-        ))}
-      </ul>
-    </div>
-
-    {/* Download Button */}
-    <div className="pt-8">
-      <button
-        onClick={downloadPDF}
-        className="bg-gray-900 hover:bg-black text-white px-6 py-2 rounded-md text-sm font-medium transition-colors"
-      >
-        Download Full Report (PDF)
-      </button>
-    </div>
-  </>
-)}
-
+      {/* Download Button */}
+      
+    </>
+  )}
 </section>
+
 
 </div>
 
