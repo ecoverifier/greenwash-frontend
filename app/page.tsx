@@ -443,10 +443,10 @@ export default function Home() {
 
               <div className="space-y-6 min-h-screen">
                 <h1 className="text-4xl md:text-6xl font-extrabold text-emerald-700 leading-tight">
-                  Check your portfolios for sustainability.
+                  Find out how sustainable companies really are.
                 </h1>
                 <p className="text-gray-600 text-md md:text-lg max-w-xl mx-auto">
-                  EcoVerifier helps you cut through greenwashing by analyzing environmental claims using trusted sources.
+                  EcoVerifier helps you make sustainable, responsible investing decisions by analyzing companies and returning environmental reports.
                 </p>
 
                 {verifying && (
@@ -457,7 +457,7 @@ export default function Home() {
 
                 {error && (
                   <p className="text-sm text-red-500 font-medium mb-4">
-                    "Please enter a valid sustainability claim. An example of a valid sustainability claim is: 'Apple will be carbon neutral by 2040.'"
+                    "Please enter a real company.'"
                   </p>
                 )}
 
@@ -527,16 +527,16 @@ export default function Home() {
                 <div className="max-w-2xl mx-auto space-y-8">
                   <h2 className="text-3xl font-bold text-emerald-700 text-center">About EcoVerifier</h2>
                   <p className="text-gray-700 text-base leading-relaxed text-center">
-                    EcoVerifier helps critically evaluate environmental claims using trusted data and AI.
+                    EcoVerifier analyzes companies’ environmental behavior using real-world ESG events, trusted sources, and AI to generate a custom GreenScore.
                   </p>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm text-gray-700">
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">Who It's For</h3>
                       <ul className="list-disc list-inside space-y-1">
-                        <li>Students researching climate responsibility</li>
-                        <li>ESG investors analyzing environmental factors</li>
-                        <li>Consumers checking company pledges</li>
+                        <li>Students exploring sustainability in economics or policy</li>
+                        <li>ESG-conscious investors screening companies</li>
+                        <li>Researchers comparing ESG scores with real outcomes</li>
                       </ul>
                     </div>
                     <div>
@@ -544,8 +544,8 @@ export default function Home() {
                       <ul className="list-disc list-inside space-y-1">
                         <li>React + Next.js</li>
                         <li>Tailwind CSS</li>
-                        <li>Firebase (Auth & DB)</li>
-                        <li>GPT 4.1 + Brave API</li>
+                        <li>Firebase (Auth & Firestore)</li>
+                        <li>OpenRouter + Brave Search API</li>
                       </ul>
                     </div>
                   </div>
@@ -553,8 +553,8 @@ export default function Home() {
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">About the Creator</h3>
                     <p className="text-sm text-gray-700 leading-relaxed">
-                      I'm Ishan Singh, a high school student passionate about tech and economics.
-                      EcoVerifier is my initiative to fight misinformation and greenwashing with AI.
+                      I'm Ishan Singh, a high school student driven by the intersection of tech, finance, and environmental accountability. 
+                      EcoVerifier is my effort to hold companies accountable by turning vague ESG claims into measurable, event-based scores.
                     </p>
                   </div>
 
@@ -563,6 +563,7 @@ export default function Home() {
                   </blockquote>
                 </div>
               </section>
+
             </div>
           ) : (
             // Report display section
