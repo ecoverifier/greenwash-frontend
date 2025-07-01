@@ -316,7 +316,7 @@ useEffect(() => {
           ? "bg-stone-100 hover:bg-stone-200 text-emerald-600 hover:text-emerald-700"
           : "bg-stone-50 text-gray-300 cursor-not-allowed"
       }`}
-      title="New Claim"
+      title="New Score"
     >
       <RiChatNewLine className="w-5 h-5" />
       New Chat
@@ -360,7 +360,7 @@ useEffect(() => {
                   if (updated.length > 0) {
                     const next = updated[0];
                     setReport(next.report);
-                    setCompany(next.claim);
+                    setCompany(next.company);
                     setActiveReportId(next.id);
                     setSessionStarted(true);
                   } else {
