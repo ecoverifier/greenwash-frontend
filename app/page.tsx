@@ -651,7 +651,7 @@ export default function Home() {
 
                       {/* ESG Findings */}
                       <div className="space-y-6">
-                        <h3 className="text-lg font-medium text-gray-900">ESG Findings</h3>
+                        <h3 className="text-lg font-medium text-gray-900">Sources</h3>
                         <ul className="space-y-6 list-none">
                           {report.eco_audit.findings.map((finding, idx) => (
                             <li key={idx} className="space-y-2 border-t pt-4">
