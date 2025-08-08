@@ -691,27 +691,51 @@ export default function Home() {
                       </div>
 
                       {/* ESG Findings */}
+                      {/* Sources */}
                       <div className="space-y-6">
                         <h3 className="text-lg font-medium text-gray-900">Sources</h3>
+
+                        {/* Prefer top-level sources if present; else fall back to findings */}
                         <ul className="space-y-6 list-none">
-                          {report.eco_audit.findings.map((finding, idx) => (
-                            <li key={idx} className="space-y-2 border-t pt-4">
-                              <a
-                                href={finding.source_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 font-semibold hover:underline"
-                              >
-                                {finding.title}
-                              </a>
-                              <p className="text-sm text-gray-700">{finding.summary}</p>
-                              <p className="text-sm text-gray-600 italic">
-                                [{finding.source_type}] {finding.impact} impact, {finding.direction} direction — {finding.date}
-                              </p>
-                            </li>
-                          ))}
+                          {(report.sources && report.sources.length > 0
+                            ? report.sources.map((s, idx) => (
+                                <li key={idx} className="space-y-2 border-t pt-4">
+                                  <a
+                                    href={s.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 font-semibold hover:underline"
+                                  >
+                                    {s.title || s.url}
+                                  </a>
+                                  <p className="text-sm text-gray-700">{s.summary}</p>
+                                  <p className="text-xs text-gray-500">
+                                    {s.source_domain ? `${s.source_domain} • ` : ""}
+                                    [{s.source_type}] {s.impact} impact, {s.direction} direction — {s.date}
+                                  </p>
+                                </li>
+                              ))
+                            : report.eco_audit.findings.map((f, idx) => (
+                                <li key={idx} className="space-y-2 border-t pt-4">
+                                  <a
+                                    href={f.source_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 font-semibold hover:underline"
+                                  >
+                                    {f.title}
+                                  </a>
+                                  <p className="text-sm text-gray-700">{f.summary}</p>
+                                  <p className="text-xs text-gray-500">
+                                    {f.source_domain ? `${f.source_domain} • ` : ""}
+                                    [{f.source_type}] {f.impact} impact, {f.direction} direction — {f.date}
+                                  </p>
+                                </li>
+                              ))
+                          )}
                         </ul>
                       </div>
+
                     </>
                   )}
                   {/* Error message for report display */}
