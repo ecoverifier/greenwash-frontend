@@ -42,6 +42,19 @@ type ESGFinding = {
   source_type: string;
   summary: string;
   source_url: string;
+  // backend now may include:
+  source_domain?: string;
+};
+
+type SourceItem = {
+  title: string;
+  url: string;
+  source_domain?: string;
+  source_type: string;
+  impact: "high" | "medium" | "low";
+  direction: "positive" | "negative" | "unclear";
+  summary: string;
+  date: string;
 };
 
 type ReportType = {
@@ -56,10 +69,14 @@ type ReportType = {
   };
   greenscore: {
     score: number;
-    factors: string[];
+    base_score?: number;    // NEW
+    rationale?: string;     // NEW
+    factors?: string[];     // make optional for compatibility
     note: string;
   };
+  sources?: SourceItem[];   // NEW
 };
+
 
 // Main React component for the ESG Analyzer application
 export default function Home() {
@@ -203,41 +220,48 @@ export default function Home() {
     setActiveReportId(newId); // Set this new report as active
 
     try {
-      // Make the API call to your FastAPI backend
       const res = await axios.get(
         `https://greenwash-api-production.up.railway.app/generate-audit?company=${encodeURIComponent(company)}`
       );
-      const result = res.data; // Get the audit result
-
-      // Update the report in the reports list with the fetched data
+      if (res.status < 200 || res.status >= 300 || !res.data) {
+        throw new Error(`Bad response: ${res.status}`);
+      }
+      const result = res.data as ReportType;
+    
+      // basic guards
+      if (typeof result?.greenscore?.score !== "number") {
+        throw new Error("Malformed API response (missing greenscore.score)");
+      }
+    
+      // Update list + current view
       setReports((prev) =>
-        prev.map((r) =>
-          r.id === newId ? { ...r, report: result } : r
-        )
+        prev.map((r) => (r.id === newId ? { ...r, report: result } : r))
       );
-      setActiveReportId(newId); // Ensure the correct report is active
-      setReport(result); // Set the current report for display
-
-      // Store the report based on authentication status
+      setActiveReportId(newId);
+      setReport(result);
+    
       if (!user) {
-        // For anonymous users, store in local storage
         const updated = [{ id: newId, company, report: result }, ...reports];
         localStorage.setItem("anon_reports", JSON.stringify(updated));
       } else {
-        // For authenticated users, store in Firestore
         await addDoc(collection(db, "reports"), {
           uid: user.uid,
           company,
           report: result,
-          createdAt: new Date().toISOString(), // Add timestamp
+          createdAt: new Date().toISOString(),
         });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error:", err);
-      setError("Failed to retrieve audit report. Please check the company name or try again later.");
+      setError(
+        err?.response?.data?.detail
+          ? `Backend error: ${err.response.data.detail}`
+          : "Failed to retrieve audit report. Please try again."
+      );
     } finally {
-      setLoading(false); // End loading state
+      setLoading(false);
     }
+    
   };
 
   // State for scroll button visibility
@@ -608,35 +632,52 @@ export default function Home() {
                       {/* GreenScore Visualization */}
                       <div className="space-y-2">
                         <h3 className="text-lg font-medium text-gray-900">GreenScore</h3>
-                        <div className="flex items-center gap-6">
-                          {/* SVG for circular progress bar */}
-                          <svg width="100" height="100" viewBox="0 0 36 36">
-                            <circle cx="18" cy="18" r="16" fill="none" stroke="#e5e7eb" strokeWidth="3" />
-                            <circle
-                              cx="18"
-                              cy="18"
-                              r="16"
-                              fill="none"
-                              stroke={`hsl(${(report.greenscore.score / 100) * 120}, 100%, 40%)`}
-                              strokeWidth="3"
-                              strokeDasharray="100"
-                              strokeDashoffset={100 - report.greenscore.score}
-                              strokeLinecap="round"
-                              transform="rotate(-90 18 18)"
-                              style={{ transition: "stroke-dashoffset 1s ease, stroke 1s ease" }}
-                            />
-                            <text x="18" y="21" textAnchor="middle" fill="#111827" fontSize="10" fontWeight="bold">
-                              {report.greenscore.score}%
-                            </text>
-                          </svg>
-                          {/* GreenScore factors */}
-                          <ul className="text-sm text-gray-700 list-disc pl-5 space-y-1">
-                            {report.greenscore.factors.map((f, i) => (
-                              <li key={i}>{f}</li>
-                            ))}
-                          </ul>
-                        </div>
+
+                        {(() => {
+                          const gs = Math.max(0, Math.min(100, report.greenscore?.score ?? 0));
+                          return (
+                            <div className="flex items-start gap-6">
+                              {/* Circular meter */}
+                              <svg width="100" height="100" viewBox="0 0 36 36">
+                                <circle cx="18" cy="18" r="16" fill="none" stroke="#e5e7eb" strokeWidth="3" />
+                                <circle
+                                  cx="18" cy="18" r="16" fill="none"
+                                  stroke={`hsl(${(gs / 100) * 120}, 100%, 40%)`}
+                                  strokeWidth="3" strokeDasharray="100"
+                                  strokeDashoffset={100 - gs}
+                                  strokeLinecap="round"
+                                  transform="rotate(-90 18 18)"
+                                  style={{ transition: "stroke-dashoffset 1s ease, stroke 1s ease" }}
+                                />
+                                <text x="18" y="21" textAnchor="middle" fill="#111827" fontSize="10" fontWeight="bold">
+                                  {gs}%
+                                </text>
+                              </svg>
+
+                              {/* Rationale / factors */}
+                              <div className="flex-1">
+                                {/* Show base vs final if available */}
+                                {typeof report.greenscore.base_score === "number" && (
+                                  <p className="text-xs text-gray-500 mb-1">
+                                    Base: {report.greenscore.base_score} • Final: {gs}
+                                  </p>
+                                )}
+                                <ul className="text-sm text-gray-700 list-disc pl-5 space-y-1">
+                                  {(
+                                    (report.greenscore.factors && report.greenscore.factors.length > 0)
+                                      ? report.greenscore.factors
+                                      : (report.greenscore.rationale ? [report.greenscore.rationale] : [])
+                                  ).map((f, i) => <li key={i}>{f}</li>)}
+                                </ul>
+                                {report.greenscore?.note && (
+                                  <p className="text-xs text-gray-500 mt-2">{report.greenscore.note}</p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
+
 
                       {/* Audit Summary */}
                       <div className="space-y-2">
