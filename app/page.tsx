@@ -6,7 +6,7 @@ import { PaperPlaneIcon, DownloadIcon } from "@radix-ui/react-icons";
 import jsPDF from "jspdf"; // For PDF generation, though not fully implemented in this snippet
 import { FaUserCircle, FaRobot, FaPlus, FaTrashAlt } from "react-icons/fa";
 import { HiArrowUpCircle } from "react-icons/hi2";
-import { RiChatNewLine } from "react-icons/ri";
+import { RiChatNewLine } from "react-icons/ri"; 
 import { FiLogIn, FiLogOut, FiMenu, FiX } from "react-icons/fi";
 import { FaArrowDown } from "react-icons/fa";
 
