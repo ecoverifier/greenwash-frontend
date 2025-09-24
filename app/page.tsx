@@ -91,6 +91,8 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   // Error message state
   const [error, setError] = useState("");
+  // State to track if error is retryable (for system errors)
+  const [isRetryableError, setIsRetryableError] = useState(false);
 
   // Function to handle user logout
   const handleLogout = async () => {
@@ -101,8 +103,9 @@ export default function Home() {
       setCompany(""); // Clear company input
       setSessionStarted(false); // Reset session
       setActiveReportId(null); // Clear active report ID
+      setError(""); // Clear any errors
+      setIsRetryableError(false); // Clear retry state
     } catch (err) {
-      console.error("Logout failed", err);
       setError("Logout failed. Please try again.");
     }
   };
@@ -197,7 +200,6 @@ export default function Home() {
     try {
       await signInWithPopup(auth, provider); // Trigger Google sign-in popup
     } catch (err) {
-      console.error("Login failed", err);
       setError("Login failed. Please try again.");
     }
   };
@@ -208,6 +210,7 @@ export default function Home() {
     if (!company.trim() || loading) return; // Don't submit if company is empty or already loading
 
     setError(""); // Clear previous errors
+    setIsRetryableError(false); // Clear retry state
     setLoading(true); // Set loading state
     setReport(null); // Clear previous report
     setSessionStarted(true); // Indicate that a session has started
@@ -221,11 +224,25 @@ export default function Home() {
 
     try {
       const res = await axios.get(
-        `https://greenwash-api-production.up.railway.app/generate-audit?company=${encodeURIComponent(company)}`
+        `https://greenwash-api-production.up.railway.app/generate-audit?company=${encodeURIComponent(company)}`,
+        {
+          timeout: 90000, // 90 second timeout for long-running analysis
+          validateStatus: function (status) {
+            return status >= 200 && status < 500; // Accept 4xx errors to handle them properly
+          }
+        }
       );
-      if (res.status < 200 || res.status >= 300 || !res.data) {
-        throw new Error(`Bad response: ${res.status}`);
+      
+      // Handle non-2xx status codes
+      if (res.status >= 400) {
+        // This will be caught by the catch block and handled appropriately
+        throw {
+          response: res,
+          status: res.status,
+          data: res.data
+        };
       }
+      
       const result = res.data as ReportType;
     
       // basic guards
@@ -252,12 +269,72 @@ export default function Home() {
         });
       }
     } catch (err: any) {
-      console.error("Error:", err);
-      setError(
-        err?.response?.data?.detail
-          ? `Backend error: ${err.response.data.detail}`
-          : "Failed to retrieve audit report. Please try again."
-      );
+      
+      // Handle axios-specific errors first
+      if (err?.code === 'ECONNABORTED' || err?.message?.includes('timeout')) {
+        setError("The request timed out. The analysis is taking longer than expected. Please try again.");
+        setIsRetryableError(true);
+      } else if (err?.code === 'ERR_NETWORK' || err?.message?.includes('Network Error')) {
+        setError("Network error. Please check your internet connection and try again.");
+        setIsRetryableError(true);
+      } else if (err?.code === 'ERR_INTERNET_DISCONNECTED') {
+        setError("No internet connection. Please check your connection and try again.");
+        setIsRetryableError(true);
+      } else if (!err?.response && !err?.status) {
+        // No response means network issue
+        setError("Unable to connect to our servers. Please check your internet connection and try again.");
+        setIsRetryableError(true);
+      } else if (err?.response?.data?.detail || err?.data?.detail) {
+        const errorDetail = err.response?.data?.detail || err.data?.detail;
+        const errorCode = errorDetail.error;
+        const errorMessage = errorDetail.message;
+        const retryGuidance = errorDetail.retry_guidance;
+        
+        // Handle different error codes with specific messages
+        switch (errorCode) {
+          case "EMPTY_INPUT":
+            setError("Please enter a company name to analyze.");
+            setIsRetryableError(false);
+            break;
+          case "TOO_LONG":
+            setError("Company name is too long. Please provide a shorter, valid company name.");
+            setIsRetryableError(false);
+            break;
+          case "VALIDATION_SYSTEM_ERROR":
+            setError(retryGuidance || "Our validation system is temporarily unavailable. Please try again in a few moments.");
+            setIsRetryableError(true);
+            break;
+          case "COMPANY_REJECTED":
+            setError("The company name you entered appears to be invalid or not a legitimate business. Please enter a real company name.");
+            setIsRetryableError(false);
+            break;
+          case "INVALID_COMPANY":
+            setError("Please enter a valid, real company name for analysis.");
+            setIsRetryableError(false);
+            break;
+          default:
+            // Handle other structured errors
+            if (errorMessage) {
+              setError(`Validation failed: ${errorMessage}`);
+              setIsRetryableError(!!retryGuidance);
+            } else {
+              setError("Company validation failed. Please try a different company name.");
+              setIsRetryableError(false);
+            }
+        }
+      } else if ((err?.response?.status || err?.status) === 429) {
+        // Rate limiting
+        setError("Too many requests. Please wait a moment before trying again.");
+        setIsRetryableError(true);
+      } else if ((err?.response?.status || err?.status) >= 500) {
+        // Server errors
+        setError("Our servers are experiencing issues. Please try again later.");
+        setIsRetryableError(true);
+      } else {
+        // General network or other errors
+        setError("Failed to retrieve audit report. Please check your connection and try again.");
+        setIsRetryableError(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -360,6 +437,8 @@ export default function Home() {
                 setCompany("");
                 setActiveReportId(null);
                 setSessionStarted(false);
+                setError(""); // Clear any errors
+                setIsRetryableError(false); // Clear retry state
                 if (window.innerWidth < 768) setIsSidebarOpen(false); // Close sidebar on mobile
               }}
               className={`inline-flex items-center gap-1 text-xs font-medium transition p-2 rounded-md ${
@@ -386,6 +465,8 @@ export default function Home() {
                     setCompany(r.company); // Set company name in input
                     setActiveReportId(r.id); // Set active report
                     setSessionStarted(true); // Start session
+                    setError(""); // Clear any errors when switching reports
+                    setIsRetryableError(false); // Clear retry state
                     if (window.innerWidth < 768) setIsSidebarOpen(false); // Close sidebar on mobile
                   }}
                   className={`group relative p-3 rounded-md text-sm cursor-pointer transition-all duration-200 shadow-sm ${
@@ -479,9 +560,25 @@ export default function Home() {
                 )}
 
                 {error && (
-                  <p className="text-sm text-red-500 font-medium mb-4">
-                    "Please enter a real company.'"
-                  </p>
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-700 font-medium mb-2">
+                      {error}
+                    </p>
+                    {isRetryableError && (
+                      <button
+                        onClick={() => {
+                          setError("");
+                          setIsRetryableError(false);
+                          if (company.trim()) {
+                            submit();
+                          }
+                        }}
+                        className="text-xs bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded transition-colors"
+                      >
+                        Try Again
+                      </button>
+                    )}
+                  </div>
                 )}
 
                 {/* Input form for company name */}
