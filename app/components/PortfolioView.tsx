@@ -58,7 +58,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({
           {portfolio.description && (
             <p className="text-sm lg:text-base text-gray-800 mt-1">{portfolio.description}</p>
           )}
-          <p className="text-xs lg:text-sm text-gray-700 mt-2">
+          <p className="text-xs lg:text-sm text-gray-900 mt-2">
             Created: {new Date(portfolio.createdAt).toLocaleDateString()}
           </p>
         </div>
@@ -223,7 +223,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({
                 />
               </div>
               <div className="lg:col-span-1">
-                <div className="text-xs text-gray-800 mb-1">Score: {newCompanyScore}</div>
+                <div className="text-xs text-gray-900 mb-1">Score: {newCompanyScore}</div>
                 <input
                   type="range"
                   min="0"
@@ -243,7 +243,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowAddForm(false)}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition text-sm"
+                  className="px-4 py-2 border border-gray-300 text-gray-900 rounded-md hover:bg-gray-50 transition text-sm"
                 >
                   Cancel
                 </button>
@@ -277,7 +277,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({
                       {getScoreLabel(company.greenscore)}
                     </span>
                   </div>
-                  <span className="text-gray-600">
+                  <span className="text-gray-900">
                     {new Date(company.addedAt).toLocaleDateString()}
                   </span>
                 </div>
@@ -311,7 +311,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({
                         {getScoreLabel(company.greenscore)}
                       </span>
                     </td>
-                    <td className="py-3 px-2 text-sm text-gray-700">
+                    <td className="py-3 px-2 text-sm text-gray-900">
                       {new Date(company.addedAt).toLocaleDateString()}
                     </td>
                     <td className="py-3 px-2">
@@ -331,7 +331,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({
         </div>
 
         {portfolio.companies.length === 0 && (
-          <div className="text-center py-6 lg:py-8 text-gray-700">
+          <div className="text-center py-6 lg:py-8 text-gray-900">
             <p className="text-sm lg:text-base">No companies in this portfolio yet.</p>
             <p className="text-xs lg:text-sm">Click "Add Company" to get started.</p>
           </div>

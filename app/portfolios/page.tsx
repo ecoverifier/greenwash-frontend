@@ -297,7 +297,7 @@ const PortfolioPage: React.FC = () => {
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600 text-sm lg:text-base">Loading portfolios...</p>
+            <p className="mt-2 text-gray-900 text-sm lg:text-base">Loading portfolios...</p>
           </div>
         </div>
       ) : (
@@ -334,7 +334,7 @@ const PortfolioPage: React.FC = () => {
                   </h2>
                   
                   {portfolios.length === 0 ? (
-                    <div className="text-center py-6 lg:py-8 text-gray-700">
+                    <div className="text-center py-6 lg:py-8 text-gray-900">
                       <FaFolderOpen className="w-8 h-8 lg:w-12 lg:h-12 mx-auto mb-3 text-gray-400" />
                       <p className="text-sm">No portfolios yet</p>
                       <p className="text-xs">Create your first portfolio to get started</p>
@@ -357,11 +357,11 @@ const PortfolioPage: React.FC = () => {
                             <div className="font-medium text-gray-900 truncate text-sm lg:text-base">
                               {portfolio.name}
                             </div>
-                            <div className="text-xs lg:text-sm text-gray-700">
+                            <div className="text-xs lg:text-sm text-gray-900">
                               {portfolio.companies.length} companies
                             </div>
                             {portfolio.companies.length > 0 && (
-                              <div className="text-xs text-gray-600 mt-1">
+                              <div className="text-xs text-gray-900 mt-1">
                                 Avg: {(
                                   portfolio.companies.reduce((sum, c) => sum + c.greenscore, 0) / 
                                   portfolio.companies.length

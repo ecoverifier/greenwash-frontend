@@ -82,7 +82,7 @@ const PortfolioDashboard: React.FC = () => {
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Portfolios</h3>
         <div className="text-center py-8">
           <FaFolderOpen className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-          <p className="text-gray-500 text-sm mb-4">
+          <p className="text-gray-800 text-sm mb-4">
             Create portfolios to track multiple companies' sustainability performance
           </p>
           <a
@@ -122,7 +122,7 @@ const PortfolioDashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <h4 className="font-medium text-gray-900 mb-1">{portfolio.name}</h4>
-                  <div className="flex items-center gap-4 text-sm text-gray-500">
+                  <div className="flex items-center gap-4 text-sm text-gray-800">
                     <span>{insights.totalCompanies} companies</span>
                     {insights.totalCompanies > 0 && (
                       <>

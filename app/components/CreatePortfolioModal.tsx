@@ -170,7 +170,7 @@ const CreatePortfolioModal: React.FC<CreatePortfolioModalProps> = ({
                         className="text-emerald-600 flex-shrink-0"
                       />
                       <span className="flex-1 truncate">{company.company}</span>
-                      <span className="text-xs text-gray-500 flex-shrink-0">
+                      <span className="text-xs text-gray-800 flex-shrink-0">
                         {company.greenscore}
                       </span>
                     </label>
