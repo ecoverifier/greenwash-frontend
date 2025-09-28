@@ -85,17 +85,17 @@ const Layout: React.FC<LayoutProps> = ({
 
         {/* Right: Navigation and Login/Logout */}
         <div className="flex items-center gap-3">
-          {/* Navigation Links - Hidden on mobile when sidebar is present */}
-          <nav className={`${showSidebar ? 'hidden lg:flex' : 'hidden md:flex'} items-center gap-4`}>
+          {/* Navigation Links - Show on mobile when no sidebar, hide when sidebar exists */}
+          <nav className={`${showSidebar ? 'hidden lg:flex' : 'flex'} items-center gap-2 lg:gap-4`}>
             <a
               href="/"
-              className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition"
+              className="text-xs lg:text-sm font-medium text-gray-700 hover:text-emerald-600 transition px-2 lg:px-0 py-1 lg:py-0 rounded hover:bg-gray-100 lg:hover:bg-transparent"
             >
               Home
             </a>
             <a
               href="/portfolios"
-              className="flex items-center gap-1 text-sm font-medium text-gray-700 hover:text-emerald-600 transition"
+              className="flex items-center gap-1 text-xs lg:text-sm font-medium text-gray-700 hover:text-emerald-600 transition px-2 lg:px-0 py-1 lg:py-0 rounded hover:bg-gray-100 lg:hover:bg-transparent"
             >
               <FaPlus className="w-3 h-3" />
               Portfolios

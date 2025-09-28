@@ -292,12 +292,12 @@ const PortfolioPage: React.FC = () => {
     }));
 
   return (
-    <Layout title="Portfolios - EcoVerifier">
+    <Layout title="Portfolios - EcoVerifier" showSidebar={false}>
       {loading ? (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Loading portfolios...</p>
+            <p className="mt-2 text-gray-600 text-sm lg:text-base">Loading portfolios...</p>
           </div>
         </div>
       ) : (
@@ -305,36 +305,37 @@ const PortfolioPage: React.FC = () => {
           {/* Page Header */}
           <div className="bg-white shadow-sm border-b">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Portfolios</h1>
-                  <p className="text-gray-800">
+                  <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Portfolios</h1>
+                  <p className="text-sm lg:text-base text-gray-800 mt-1">
                     Create and manage portfolios to track multiple companies' sustainability performance
                   </p>
                 </div>
                 <button
                   onClick={() => setIsCreateModalOpen(true)}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition flex items-center gap-2"
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition text-sm lg:text-base whitespace-nowrap"
                 >
                   <FaPlus className="w-4 h-4" />
-                  Create Portfolio
+                  <span className="hidden sm:inline">Create Portfolio</span>
+                  <span className="sm:hidden">Create</span>
                 </button>
               </div>
             </div>
           </div>
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="grid lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
               {/* Portfolio List */}
-              <div className="lg:col-span-1">
+              <div className="lg:col-span-1 order-1 lg:order-1">
                 <div className="bg-white rounded-lg shadow-sm p-4">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">
                     Your Portfolios ({portfolios.length})
                   </h2>
                   
                   {portfolios.length === 0 ? (
-                    <div className="text-center py-8 text-gray-700">
-                      <FaFolderOpen className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                    <div className="text-center py-6 lg:py-8 text-gray-700">
+                      <FaFolderOpen className="w-8 h-8 lg:w-12 lg:h-12 mx-auto mb-3 text-gray-400" />
                       <p className="text-sm">No portfolios yet</p>
                       <p className="text-xs">Create your first portfolio to get started</p>
                     </div>
@@ -353,10 +354,10 @@ const PortfolioPage: React.FC = () => {
                             onClick={() => setSelectedPortfolio(portfolio)}
                             className="w-full text-left p-3 pr-12"
                           >
-                            <div className="font-medium text-gray-900 truncate">
+                            <div className="font-medium text-gray-900 truncate text-sm lg:text-base">
                               {portfolio.name}
                             </div>
-                            <div className="text-sm text-gray-700">
+                            <div className="text-xs lg:text-sm text-gray-700">
                               {portfolio.companies.length} companies
                             </div>
                             {portfolio.companies.length > 0 && (
@@ -375,7 +376,7 @@ const PortfolioPage: React.FC = () => {
                               e.stopPropagation();
                               handleDeletePortfolio(portfolio.id);
                             }}
-                            className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-500 transition-opacity opacity-0 group-hover:opacity-100"
+                            className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-500 transition-opacity opacity-0 group-hover:opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
                             title="Delete portfolio"
                           >
                             <FaTrashAlt className="w-3 h-3" />
@@ -388,7 +389,7 @@ const PortfolioPage: React.FC = () => {
               </div>
 
               {/* Portfolio Detail */}
-              <div className="lg:col-span-3">
+              <div className="lg:col-span-3 order-2 lg:order-2">
                 {selectedPortfolio ? (
                   <PortfolioView
                     portfolio={selectedPortfolio}
@@ -398,18 +399,20 @@ const PortfolioPage: React.FC = () => {
                     onRemoveCompany={handleRemoveCompany}
                   />
                 ) : (
-                  <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-                    <FaFolderOpen className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                    <h3 className="text-xl font-medium text-gray-900 mb-2">
-                      Select a Portfolio
+                  <div className="bg-white rounded-lg shadow-sm p-8 lg:p-12 text-center">
+                    <FaFolderOpen className="w-12 h-12 lg:w-16 lg:h-16 mx-auto mb-4 text-gray-400" />
+                    <h3 className="text-lg lg:text-xl font-medium text-gray-900 mb-2">
+                      {portfolios.length === 0 ? 'Create Your First Portfolio' : 'Select a Portfolio'}
                     </h3>
-                    <p className="text-gray-800 mb-6">
-                      Choose a portfolio from the list to view its details and manage companies.
+                    <p className="text-sm lg:text-base text-gray-800 mb-6">
+                      {portfolios.length === 0 
+                        ? 'Get started by creating a portfolio to track multiple companies.'
+                        : 'Choose a portfolio from the list above to view its details and manage companies.'}
                     </p>
                     {portfolios.length === 0 && (
                       <button
                         onClick={() => setIsCreateModalOpen(true)}
-                        className="px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
+                        className="px-4 lg:px-6 py-2 lg:py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition text-sm lg:text-base"
                       >
                         Create Your First Portfolio
                       </button>

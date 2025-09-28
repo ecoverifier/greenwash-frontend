@@ -109,16 +109,16 @@ const CreatePortfolioModal: React.FC<CreatePortfolioModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-lg w-full max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+        <div className="p-4 sm:p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
               {editingPortfolio ? 'Edit Portfolio' : 'Create Portfolio'}
             </h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 hover:text-gray-600 p-1"
             >
               <FaTimes className="w-5 h-5" />
             </button>
@@ -133,7 +133,7 @@ const CreatePortfolioModal: React.FC<CreatePortfolioModalProps> = ({
                 type="text"
                 value={portfolioName}
                 onChange={(e) => setPortfolioName(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm text-gray-900"
                 placeholder="e.g., Tech Giants, Green Energy"
                 required
               />
@@ -146,7 +146,7 @@ const CreatePortfolioModal: React.FC<CreatePortfolioModalProps> = ({
               <textarea
                 value={portfolioDescription}
                 onChange={(e) => setPortfolioDescription(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:outline-none resize-none"
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:outline-none resize-none text-sm text-gray-900"
                 rows={2}
                 placeholder="Optional description..."
               />
@@ -157,21 +157,21 @@ const CreatePortfolioModal: React.FC<CreatePortfolioModalProps> = ({
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Add from analyzed companies
                 </label>
-                <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2 space-y-1">
+                <div className="max-h-28 sm:max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2 space-y-1">
                   {availableCompanies.map((company) => (
                     <label
                       key={company.company}
-                      className="flex items-center gap-2 cursor-pointer p-1 hover:bg-gray-50 rounded"
+                      className="flex items-center gap-2 cursor-pointer p-1 hover:bg-gray-50 rounded text-sm"
                     >
                       <input
                         type="checkbox"
                         checked={selectedCompanies.includes(company.company)}
                         onChange={() => toggleCompanySelection(company.company)}
-                        className="text-emerald-600"
+                        className="text-emerald-600 flex-shrink-0"
                       />
-                      <span className="text-sm flex-1">{company.company}</span>
-                      <span className="text-xs text-gray-500">
-                        Score: {company.greenscore}
+                      <span className="flex-1 truncate">{company.company}</span>
+                      <span className="text-xs text-gray-500 flex-shrink-0">
+                        {company.greenscore}
                       </span>
                     </label>
                   ))}
@@ -183,12 +183,12 @@ const CreatePortfolioModal: React.FC<CreatePortfolioModalProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Add custom company
               </label>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <input
                   type="text"
                   value={customCompany}
                   onChange={(e) => setCustomCompany(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm text-gray-900"
                   placeholder="Company name"
                 />
                 <div>
@@ -207,18 +207,18 @@ const CreatePortfolioModal: React.FC<CreatePortfolioModalProps> = ({
               </div>
             </div>
 
-            <div className="flex gap-3 pt-4 border-t">
+            <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition"
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition text-sm order-2 sm:order-1 sm:flex-1"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={!portfolioName.trim()}
-                className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition text-sm order-1 sm:order-2 sm:flex-1"
               >
                 {editingPortfolio ? 'Update Portfolio' : 'Create Portfolio'}
               </button>

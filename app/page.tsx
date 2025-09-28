@@ -494,7 +494,7 @@ export default function Home() {
                           }
                         }
                       }}
-                      className="w-full p-4 border border-gray-300 rounded-lg shadow-md resize-none focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm bg-white"
+                      className="w-full p-4 border border-gray-300 rounded-lg shadow-md resize-none focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm text-gray-900 bg-white"
                       placeholder="" // Placeholder is handled by animatedPlaceholder
                     />
                     {/* Animated placeholder */}
