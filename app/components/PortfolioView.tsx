@@ -166,7 +166,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({
                   <div className="space-y-2">
                     {insights.highPerformers.map((company) => (
                       <div key={company.id} className="flex justify-between items-center p-2 bg-green-50 rounded text-sm">
-                        <span className="font-medium truncate mr-2">{company.company}</span>
+                        <span className="font-medium truncate mr-2 text-gray-900">{company.company}</span>
                         <span className="font-bold text-green-600 flex-shrink-0">{company.greenscore}</span>
                       </div>
                     ))}
@@ -183,7 +183,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({
                   <div className="space-y-2">
                     {insights.lowPerformers.map((company) => (
                       <div key={company.id} className="flex justify-between items-center p-2 bg-red-50 rounded text-sm">
-                        <span className="font-medium truncate mr-2">{company.company}</span>
+                        <span className="font-medium truncate mr-2 text-gray-900">{company.company}</span>
                         <span className="font-bold text-red-600 flex-shrink-0">{company.greenscore}</span>
                       </div>
                     ))}
@@ -302,7 +302,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({
               <tbody>
                 {portfolio.companies.map((company) => (
                   <tr key={company.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-3 px-2 font-medium">{company.company}</td>
+                    <td className="py-3 px-2 font-medium text-gray-900">{company.company}</td>
                     <td className={`py-3 px-2 font-bold ${getScoreColor(company.greenscore)}`}>
                       {company.greenscore}
                     </td>

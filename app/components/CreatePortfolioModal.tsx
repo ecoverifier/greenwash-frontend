@@ -169,7 +169,7 @@ const CreatePortfolioModal: React.FC<CreatePortfolioModalProps> = ({
                         onChange={() => toggleCompanySelection(company.company)}
                         className="text-emerald-600 flex-shrink-0"
                       />
-                      <span className="flex-1 truncate">{company.company}</span>
+                      <span className="flex-1 truncate text-gray-900">{company.company}</span>
                       <span className="text-xs text-gray-800 flex-shrink-0">
                         {company.greenscore}
                       </span>
@@ -192,7 +192,7 @@ const CreatePortfolioModal: React.FC<CreatePortfolioModalProps> = ({
                   placeholder="Company name"
                 />
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">
+                  <label className="block text-xs text-gray-800 mb-1">
                     Estimated GreenScore: {customScore}
                   </label>
                   <input
@@ -211,7 +211,7 @@ const CreatePortfolioModal: React.FC<CreatePortfolioModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition text-sm order-2 sm:order-1 sm:flex-1"
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-900 hover:bg-gray-50 transition text-sm order-2 sm:order-1 sm:flex-1"
               >
                 Cancel
               </button>
