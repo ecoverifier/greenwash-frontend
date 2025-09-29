@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import axios from "axios";
 // Importing icons from Radix UI and React Icons
@@ -20,6 +21,7 @@ import { FaArrowDown } from "react-icons/fa";
 // export const auth = getAuth(app);
 // export const provider = new GoogleAuthProvider();
 // export const db = getFirestore(app);
+
 import { auth, provider, db, signInWithPopup, signOut } from "./firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
 import {
