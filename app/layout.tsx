@@ -1,6 +1,6 @@
 "use client";
 
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { useEffect } from "react";
@@ -20,11 +20,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "EcoVerifier",
   description: "Find the truth behind what's green and what's not",
-};
-
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -48,7 +43,6 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        suppressHydrationWarning={true}
       >
         {children}
       </body>
