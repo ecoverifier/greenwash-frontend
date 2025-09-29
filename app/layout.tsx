@@ -3,7 +3,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Script from "next/script";
+import Script from "next/script"; // ✅ import Script
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,8 +27,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {/* ✅ GA Snippet moved inside body */}
+      <head>
+        {/* ✅ Google Analytics 4 snippet */}
         <Script
           async
           src="https://www.googletagmanager.com/gtag/js?id=G-EQJYCYQEQE"
@@ -38,12 +38,13 @@ export default function RootLayout({
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', 'G-EQJYCYQEQE', {
-              page_path: window.location.pathname,
-            });
+            gtag('config', 'G-EQJYCYQEQE');
           `}
         </Script>
-
+      </head>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
         {children}
       </body>
     </html>
