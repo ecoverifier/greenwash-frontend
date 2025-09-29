@@ -16,7 +16,7 @@ const firebaseConfig = {
   storageBucket: "greenwash-5365b.firebasestorage.app",
   messagingSenderId: "294149249754",
   appId: "1:294149249754:web:013329686e7194499c23e3",
-  measurementId: "G-JQ91MKH0ZR"
+  measurementId: "G-N3EK9EY9N0"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -27,7 +27,3 @@ const provider = new GoogleAuthProvider();
 const db = getFirestore(app);
 
 export { auth, provider, db, signInWithPopup, signOut };
-
-
-
-
