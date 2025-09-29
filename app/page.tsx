@@ -10,6 +10,9 @@ import { HiArrowUpCircle } from "react-icons/hi2";
 import { RiChatNewLine } from "react-icons/ri"; 
 import { FiLogIn, FiLogOut, FiMenu, FiX } from "react-icons/fi";
 import { FaArrowDown } from "react-icons/fa";
+import AddToPortfolioButton from "./components/AddToPortfolioButton";
+import Layout from "./components/Layout";
+import ReportsSidebar from "./components/ReportsSidebar";
 
 // Firebase imports - ensure you have a 'firebase.ts' file with these exports
 // Example:
@@ -32,7 +35,6 @@ import {
   doc,
   query,
   where,
-  orderBy,
 } from "firebase/firestore";
 
 // TypeScript types for the ESG report structure
@@ -82,8 +84,6 @@ type ReportType = {
 
 // Main React component for the ESG Analyzer application
 export default function Home() {
-  // State for sidebar visibility (mobile)
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   // State for verifying status (e.g., during audit)
   const [verifying, setVerifying] = useState(false);
 
@@ -93,6 +93,8 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   // Error message state
   const [error, setError] = useState("");
+  // State to track if error is retryable (for system errors)
+  const [isRetryableError, setIsRetryableError] = useState(false);
 
   // Function to handle user logout
   const handleLogout = async () => {
@@ -103,8 +105,9 @@ export default function Home() {
       setCompany(""); // Clear company input
       setSessionStarted(false); // Reset session
       setActiveReportId(null); // Clear active report ID
+      setError(""); // Clear any errors
+      setIsRetryableError(false); // Clear retry state
     } catch (err) {
-      console.error("Logout failed", err);
       setError("Logout failed. Please try again.");
     }
   };
@@ -154,16 +157,18 @@ export default function Home() {
   // State for loading status during API calls
   const [loading, setLoading] = useState(false);
   // State for stored reports (from Firebase or local storage)
-  const [reports, setReports] = useState<any[]>(() => {
-    // Initialize reports from local storage on client-side
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("anon_reports");
-      return stored ? JSON.parse(stored) : [];
-    }
-    return [];
-  });
+  const [reports, setReports] = useState<any[]>([]);
   // State for the currently active (displayed) report ID
   const [activeReportId, setActiveReportId] = useState<string | null>(null);
+
+  // Effect to handle client-side initialization
+  useEffect(() => {
+    // Initialize reports from local storage only on client-side
+    const stored = localStorage.getItem("anon_reports");
+    if (stored) {
+      setReports(JSON.parse(stored));
+    }
+  }, []);
 
   // Effect to listen for Firebase authentication state changes
   useEffect(() => {
@@ -181,11 +186,12 @@ export default function Home() {
       // If user is authenticated, fetch from Firestore
       const q = query(
         collection(db, "reports"),
-        where("uid", "==", uid), // Filter by user ID
-        orderBy("createdAt", "desc") // Order by creation date
+        where("uid", "==", uid) // Filter by user ID
       );
       const snapshot = await getDocs(q);
-      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as any[];
+      // Sort client-side by createdAt descending
+      data.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
       setReports(data);
     } else {
       // If anonymous, fetch from local storage
@@ -199,7 +205,6 @@ export default function Home() {
     try {
       await signInWithPopup(auth, provider); // Trigger Google sign-in popup
     } catch (err) {
-      console.error("Login failed", err);
       setError("Login failed. Please try again.");
     }
   };
@@ -210,6 +215,7 @@ export default function Home() {
     if (!company.trim() || loading) return; // Don't submit if company is empty or already loading
 
     setError(""); // Clear previous errors
+    setIsRetryableError(false); // Clear retry state
     setLoading(true); // Set loading state
     setReport(null); // Clear previous report
     setSessionStarted(true); // Indicate that a session has started
@@ -223,11 +229,25 @@ export default function Home() {
 
     try {
       const res = await axios.get(
-        `https://greenwash-api-production.up.railway.app/generate-audit?company=${encodeURIComponent(company)}`
+        `https://greenwash-api-production.up.railway.app/generate-audit?company=${encodeURIComponent(company)}`,
+        {
+          timeout: 90000, // 90 second timeout for long-running analysis
+          validateStatus: function (status) {
+            return status >= 200 && status < 500; // Accept 4xx errors to handle them properly
+          }
+        }
       );
-      if (res.status < 200 || res.status >= 300 || !res.data) {
-        throw new Error(`Bad response: ${res.status}`);
+      
+      // Handle non-2xx status codes
+      if (res.status >= 400) {
+        // This will be caught by the catch block and handled appropriately
+        throw {
+          response: res,
+          status: res.status,
+          data: res.data
+        };
       }
+      
       const result = res.data as ReportType;
     
       // basic guards
@@ -254,23 +274,86 @@ export default function Home() {
         });
       }
     } catch (err: any) {
-      console.error("Error:", err);
-      setError(
-        err?.response?.data?.detail
-          ? `Backend error: ${err.response.data.detail}`
-          : "Failed to retrieve audit report. Please try again."
-      );
+      
+      // Handle axios-specific errors first
+      if (err?.code === 'ECONNABORTED' || err?.message?.includes('timeout')) {
+        setError("The request timed out. The analysis is taking longer than expected. Please try again.");
+        setIsRetryableError(true);
+      } else if (err?.code === 'ERR_NETWORK' || err?.message?.includes('Network Error')) {
+        setError("Network error. Please check your internet connection and try again.");
+        setIsRetryableError(true);
+      } else if (err?.code === 'ERR_INTERNET_DISCONNECTED') {
+        setError("No internet connection. Please check your connection and try again.");
+        setIsRetryableError(true);
+      } else if (!err?.response && !err?.status) {
+        // No response means network issue
+        setError("Unable to connect to our servers. Please check your internet connection and try again.");
+        setIsRetryableError(true);
+      } else if (err?.response?.data?.detail || err?.data?.detail) {
+        const errorDetail = err.response?.data?.detail || err.data?.detail;
+        const errorCode = errorDetail.error;
+        const errorMessage = errorDetail.message;
+        const retryGuidance = errorDetail.retry_guidance;
+        
+        // Handle different error codes with specific messages
+        switch (errorCode) {
+          case "EMPTY_INPUT":
+            setError("Please enter a company name to analyze.");
+            setIsRetryableError(false);
+            break;
+          case "TOO_LONG":
+            setError("Company name is too long. Please provide a shorter, valid company name.");
+            setIsRetryableError(false);
+            break;
+          case "VALIDATION_SYSTEM_ERROR":
+            setError(retryGuidance || "Our validation system is temporarily unavailable. Please try again in a few moments.");
+            setIsRetryableError(true);
+            break;
+          case "COMPANY_REJECTED":
+            setError("The company name you entered appears to be invalid or not a legitimate business. Please enter a real company name.");
+            setIsRetryableError(false);
+            break;
+          case "INVALID_COMPANY":
+            setError("Please enter a valid, real company name for analysis.");
+            setIsRetryableError(false);
+            break;
+          default:
+            // Handle other structured errors
+            if (errorMessage) {
+              setError(`Validation failed: ${errorMessage}`);
+              setIsRetryableError(!!retryGuidance);
+            } else {
+              setError("Company validation failed. Please try a different company name.");
+              setIsRetryableError(false);
+            }
+        }
+      } else if ((err?.response?.status || err?.status) === 429) {
+        // Rate limiting
+        setError("Too many requests. Please wait a moment before trying again.");
+        setIsRetryableError(true);
+      } else if ((err?.response?.status || err?.status) >= 500) {
+        // Server errors
+        setError("Our servers are experiencing issues. Please try again later.");
+        setIsRetryableError(true);
+      } else {
+        // General network or other errors
+        setError("Failed to retrieve audit report. Please check your connection and try again.");
+        setIsRetryableError(true);
+      }
     } finally {
       setLoading(false);
     }
     
   };
 
-  // State for scroll button visibility
-  const [showScrollButton, setShowScrollButton] = useState(true);
+  // State for scroll button visibility (start false for hydration safety)
+  const [showScrollButton, setShowScrollButton] = useState(false);
 
   // Effect to handle scroll button visibility
   useEffect(() => {
+    // Set initial scroll button state
+    setShowScrollButton(window.scrollY < 200);
+    
     const handleScroll = () => {
       const scrollY = window.scrollY;
       // Hide button after scrolling down 200px
@@ -281,186 +364,82 @@ export default function Home() {
     return () => window.removeEventListener("scroll", handleScroll); // Cleanup event listener
   }, []);
 
+  // Helper functions for sidebar actions
+  const handleNewChat = () => {
+    setReport(null);
+    setCompany("");
+    setActiveReportId(null);
+    setSessionStarted(false);
+    setError("");
+    setIsRetryableError(false);
+  };
+
+  const handleSelectReport = (r: any) => {
+    setReport(r.report);
+    setCompany(r.company);
+    setActiveReportId(r.id);
+    setSessionStarted(true);
+    setError("");
+    setIsRetryableError(false);
+  };
+
+  const handleDeleteReport = (reportId: string) => {
+    setReports((prev) => {
+      const updated = prev.filter((rep) => rep.id !== reportId);
+      const active = reportId === activeReportId;
+
+      if (active) {
+        // If deleting the active report, switch to the first available or clear
+        if (updated.length > 0) {
+          const next = updated[0];
+          setReport(next.report);
+          setCompany(next.company);
+          setActiveReportId(next.id);
+          setSessionStarted(true);
+        } else {
+          // No more reports, clear everything
+          setReport(null);
+          setCompany("");
+          setActiveReportId(null);
+          setSessionStarted(false);
+          setLoading(false);
+          setVerifying(false);
+        }
+      }
+
+      // Update local storage for anonymous users
+      if (!user) {
+        localStorage.setItem("anon_reports", JSON.stringify(updated));
+      }
+
+      return updated;
+    });
+  };
+
+  // Create sidebar content
+  const sidebarContent = (
+    <ReportsSidebar
+      reports={reports}
+      activeReportId={activeReportId}
+      sessionStarted={sessionStarted}
+      user={user}
+      onNewChat={handleNewChat}
+      onSelectReport={handleSelectReport}
+      onDeleteReport={handleDeleteReport}
+    />
+  );
+
   return (
-    <>
-      {/* Header Section */}
-      <header className="md:ml-64 sticky top-0 z-50 bg-white px-6 py-3 flex items-center justify-between relative">
-        {/* Left: Mobile menu + Brand (desktop) */}
-        <div className="flex items-center gap-3">
-          {/* Mobile toggle (mobile only) */}
-          <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="md:hidden text-emerald-600"
-            aria-label="Toggle Sidebar"
-          >
-            {isSidebarOpen ? <FiX className="w-6 h-6" /> : <FiMenu className="w-6 h-6" />}
-          </button>
-
-          {/* Brand for desktop (hidden on mobile) */}
-          <div className="hidden md:flex items-center gap-2">
-            <img src="favicon.ico" alt="EcoVerifier Logo" className="w-6 h-6" />
-            <span className="text-lg font-semibold text-emerald-600 tracking-tight">
-              EcoVerifier
-            </span>
-          </div>
-        </div>
-
-        {/* Center: Brand on mobile only */}
-        <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2 md:hidden">
-          <img src="favicon.ico" alt="EcoVerifier Logo" className="w-6 h-6" />
-          <span className="text-base font-semibold text-emerald-600 tracking-tight">
-            EcoVerifier
-          </span>
-        </div>
-
-        {/* Right: Login/Logout button */}
-        <div className="flex gap-5">
-          {user ? (
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 text-sm font-medium text-red-500 hover:text-red-600 transition hover:bg-stone-100 p-2 rounded-md"
-            >
-              <FiLogOut className="w-4 h-4" />
-              Logout
-            </button>
-          ) : (
-            <button
-              onClick={login}
-              className="flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition hover:bg-stone-100 p-2 rounded-md"
-            >
-              <FiLogIn className="w-4 h-4" />
-              Login with Google
-            </button>
-          )}
-
-        </div>
-
-      </header>
-
+    <Layout 
+      showSidebar={true} 
+      sidebarContent={sidebarContent}
+      title="EcoVerifier"
+    >
       {/* Background gradient for the top section */}
       <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-white via-[#f7f9fb] to-transparent -z-10" />
 
-      {/* Main Layout (Sidebar + Content) */}
-      <div className="flex min-h-screen bg-[#f7f9fb] text-gray-900 font-sans">
-
-        {/* Sidebar */}
-        <aside
-          className={`fixed top-0 left-0 h-screen w-full max-w-xs md:w-64 bg-white shadow-xl flex flex-col transition-transform duration-300 ease-in-out
-            ${isSidebarOpen ? "translate-x-0 z-[60]" : "-translate-x-full z-40"}
-            md:translate-x-0 md:z-40 border-r border-gray-100`}
-        >
-          {/* Sidebar Header */}
-          <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100 shrink-0">
-            <h2 className="text-sm font-semibold text-gray-900 tracking-wide uppercase">
-              Reports
-            </h2>
-            {/* New Chat button */}
-            <button
-              disabled={!sessionStarted}
-              onClick={() => {
-                setReport(null);
-                setCompany("");
-                setActiveReportId(null);
-                setSessionStarted(false);
-                if (window.innerWidth < 768) setIsSidebarOpen(false); // Close sidebar on mobile
-              }}
-              className={`inline-flex items-center gap-1 text-xs font-medium transition p-2 rounded-md ${
-                sessionStarted
-                  ? "bg-stone-100 hover:bg-stone-200 text-emerald-600 hover:text-emerald-700"
-                  : "bg-stone-50 text-gray-300 cursor-not-allowed"
-              }`}
-              title="New Score"
-            >
-              <RiChatNewLine className="w-5 h-5" />
-              New Chat
-            </button>
-          </div>
-
-          {/* Scrollable area for reports list */}
-          <div className="flex-1 overflow-y-auto flex flex-col">
-            {/* Reports List */}
-            <div className="flex-1 px-4 py-3 space-y-2">
-              {reports.map((r) => (
-                <div
-                  key={r.id}
-                  onClick={() => {
-                    setReport(r.report); // Set report for display
-                    setCompany(r.company); // Set company name in input
-                    setActiveReportId(r.id); // Set active report
-                    setSessionStarted(true); // Start session
-                    if (window.innerWidth < 768) setIsSidebarOpen(false); // Close sidebar on mobile
-                  }}
-                  className={`group relative p-3 rounded-md text-sm cursor-pointer transition-all duration-200 shadow-sm ${
-                    r.id === activeReportId
-                      ? "bg-gray-100 shadow-inner"
-                      : "hover:bg-gray-50"
-                  }`}
-                >
-                  <span className="block pr-6 font-medium text-sm text-gray-800 leading-tight truncate">
-                    {r.company}
-                  </span>
-
-                  {/* Trash icon for deleting reports */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent triggering parent onClick
-                      setReports((prev) => {
-                        const updated = prev.filter((rep) => rep.id !== r.id);
-                        const active = r.id === activeReportId;
-
-                        if (active) {
-                          // If deleting the active report, switch to the first available or clear
-                          if (updated.length > 0) {
-                            const next = updated[0];
-                            setReport(next.report);
-                            setCompany(next.company);
-                            setActiveReportId(next.id);
-                            setSessionStarted(true);
-                          } else {
-                            // No more reports, clear everything
-                            setReport(null);
-                            setCompany("");
-                            setActiveReportId(null);
-                            setSessionStarted(false);
-                            setLoading(false);
-                            setVerifying(false);
-                          }
-                        }
-
-                        // Update local storage for anonymous users
-                        if (!user) {
-                          localStorage.setItem("anon_reports", JSON.stringify(updated));
-                        }
-
-                        return updated;
-                      });
-
-                      // Delete from Firestore for authenticated users
-                      if (user) {
-                        deleteDoc(doc(db, "reports", r.id));
-                      }
-                    }}
-                    className="absolute top-2.5 right-3 text-gray-400 hover:text-red-500 transition-opacity opacity-100 md:opacity-0 md:group-hover:opacity-100"
-                    title="Delete report"
-                  >
-                    <FaTrashAlt className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </aside>
-
-        {/* Mobile Overlay for sidebar */}
-        {isSidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-30 z-30 md:hidden"
-            onClick={() => setIsSidebarOpen(false)}
-          />
-        )}
-
-        {/* Main Content Area */}
-        <main className="md:pl-64 flex-1 px-6 py-5 sm:px-10 bg-gray-50 min-h-screen">
+      {/* Main Content Area */}
+      <div className="flex-1 px-6 py-5 sm:px-10 bg-gray-50 min-h-screen">
 
           {/* Initial state: Input form and About section */}
           {!sessionStarted ? (
@@ -481,9 +460,25 @@ export default function Home() {
                 )}
 
                 {error && (
-                  <p className="text-sm text-red-500 font-medium mb-4">
-                    "Please enter a real company.'"
-                  </p>
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-700 font-medium mb-2">
+                      {error}
+                    </p>
+                    {isRetryableError && (
+                      <button
+                        onClick={() => {
+                          setError("");
+                          setIsRetryableError(false);
+                          if (company.trim()) {
+                            submit();
+                          }
+                        }}
+                        className="text-xs bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded transition-colors"
+                      >
+                        Try Again
+                      </button>
+                    )}
+                  </div>
                 )}
 
                 {/* Input form for company name */}
@@ -501,7 +496,7 @@ export default function Home() {
                           }
                         }
                       }}
-                      className="w-full p-4 border border-gray-300 rounded-lg shadow-md resize-none focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm bg-white"
+                      className="w-full p-4 border border-gray-300 rounded-lg shadow-md resize-none focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm text-gray-900 bg-white"
                       placeholder="" // Placeholder is handled by animatedPlaceholder
                     />
                     {/* Animated placeholder */}
@@ -633,7 +628,15 @@ export default function Home() {
 
                       {/* GreenScore Visualization */}
                       <div className="space-y-2">
-                        <h3 className="text-lg font-medium text-gray-900">GreenScore</h3>
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-medium text-gray-900">GreenScore</h3>
+                          <AddToPortfolioButton
+                            company={report.company}
+                            greenscore={Math.max(0, Math.min(100, report.greenscore?.score ?? 0))}
+                            reportId={activeReportId || undefined}
+                            className="ml-4"
+                          />
+                        </div>
 
                         {(() => {
                           const gs = Math.max(0, Math.min(100, report.greenscore?.score ?? 0));
@@ -751,8 +754,7 @@ export default function Home() {
               </div>
             </div>
           )}
-        </main>
       </div>
-    </>
+    </Layout>
   );
 }
