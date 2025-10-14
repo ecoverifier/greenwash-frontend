@@ -714,7 +714,7 @@ export default function Home() {
                                   <p className="text-sm text-gray-700">{s.summary}</p>
                                   <p className="text-xs text-gray-500">
                                     {s.source_domain ? `${s.source_domain} • ` : ""}
-                                    [{s.source_type}] {s.impact} impact, {s.direction} direction — {s.date}
+                                    {s.source_type ? `[${s.source_type}] ` : ""}{s.impact} impact, {s.direction} direction — {s.date}
                                   </p>
                                 </li>
                               ))
