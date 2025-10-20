@@ -584,7 +584,7 @@ export default function Home() {
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">About the Creator</h3>
                     <p className="text-sm text-gray-700 leading-relaxed">
-                      We are a team of high schoolers driven by the intersection of tech, finance, and environmental accountability. 
+                      Hi, I am Ishan Singh, a high schooler driven by the intersection of tech, finance, and environmental accountability. 
                       EcoVerifier is our effort to hold companies accountable by turning vague ESG claims into measurable, event-based scores.
                     </p>
                   </div>
