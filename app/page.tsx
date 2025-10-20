@@ -162,9 +162,11 @@ export default function Home() {
   // Effect to handle client-side initialization
   useEffect(() => {
     // Initialize reports from local storage only on client-side
-    const stored = localStorage.getItem("anon_reports");
-    if (stored) {
-      setReports(JSON.parse(stored));
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem("anon_reports");
+      if (stored) {
+        setReports(JSON.parse(stored));
+      }
     }
   }, []);
 
@@ -349,17 +351,28 @@ export default function Home() {
 
   // Effect to handle scroll button visibility
   useEffect(() => {
-    // Set initial scroll button state
-    setShowScrollButton(window.scrollY < 200);
+    // Set initial scroll button state safely
+    const setInitialState = () => {
+      if (typeof window !== 'undefined') {
+        setShowScrollButton(window.scrollY < 200);
+      }
+    };
     
     const handleScroll = () => {
-      const scrollY = window.scrollY;
-      // Hide button after scrolling down 200px
-      setShowScrollButton(scrollY < 200);
+      if (typeof window !== 'undefined') {
+        const scrollY = window.scrollY;
+        // Hide button after scrolling down 200px
+        setShowScrollButton(scrollY < 200);
+      }
     };
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll); // Cleanup event listener
+    // Set initial state
+    setInitialState();
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener("scroll", handleScroll);
+      return () => window.removeEventListener("scroll", handleScroll); // Cleanup event listener
+    }
   }, []);
 
   // Helper functions for sidebar actions
