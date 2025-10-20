@@ -589,6 +589,21 @@ export default function Home() {
                     </p>
                   </div>
 
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Our Team</h3>
+                    <p className="text-sm text-gray-700 leading-relaxed mb-3">
+                      EcoVerifier was built by a passionate team of students combining technology, sustainability, and finance.
+                    </p>
+                    <div className="text-sm text-gray-700 space-y-2">
+                      <div>
+                        <span className="font-medium text-gray-900">Lead Backend Developer:</span> Risith Kankanamge
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-900">Lead Frontend Developers:</span> Ritvik Rajkumar and Santhosh Ilaiyaraja
+                      </div>
+                    </div>
+                  </div>
+
                   <blockquote className="italic text-sm text-gray-500 border-l-4 border-emerald-400 pl-4 mt-4">
                     “55% of global customers are skeptical of the sustainability claims of most brands.” — YouGov, 2023
                   </blockquote>
