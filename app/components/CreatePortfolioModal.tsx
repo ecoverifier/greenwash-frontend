@@ -127,7 +127,7 @@ const CreatePortfolioModal: React.FC<CreatePortfolioModalProps> = ({
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Portfolio Name *
@@ -138,7 +138,6 @@ const CreatePortfolioModal: React.FC<CreatePortfolioModalProps> = ({
                 onChange={(e) => setPortfolioName(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm text-gray-900"
                 placeholder="e.g., Tech Giants, Green Energy"
-                required
               />
             </div>
 
