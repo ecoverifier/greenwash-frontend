@@ -96,6 +96,9 @@ const CreatePortfolioModal: React.FC<CreatePortfolioModalProps> = ({
     setSelectedCompanies([]);
     setCustomCompany('');
     setCustomScore(50);
+    
+    // Close modal after successful submission
+    onClose();
   };
 
   const toggleCompanySelection = (companyName: string) => {
