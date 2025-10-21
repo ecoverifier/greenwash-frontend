@@ -584,7 +584,7 @@ export default function Home() {
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">About the Creator</h3>
                     <p className="text-sm text-gray-700 leading-relaxed">
-                      Hi, I am Ishan Singh, a high schooler driven by the intersection of tech, finance, and environmental accountability. 
+                      Hi, I am Ishan Singh, the creator of Literally Finance team@literallyfinance.com. I'm a high schooler driven by the intersection of tech, finance, and environmental accountability. 
                       EcoVerifier is our effort to hold companies accountable by turning vague ESG claims into measurable, event-based scores.
                     </p>
                   </div>
@@ -596,10 +596,10 @@ export default function Home() {
                     </p>
                     <div className="text-sm text-gray-700 space-y-2">
                       <div>
-                        <span className="font-medium text-gray-900">Lead Backend Developer:</span> Risith Kankanamge
+                        <span className="font-medium text-gray-900">Lead Backend Developer:</span> Risith Kankanamge (risithcha@gmail.com)
                       </div>
                       <div>
-                        <span className="font-medium text-gray-900">Lead Frontend Developers:</span> Ritvik Rajkumar and Santhosh Ilaiyaraja
+                        <span className="font-medium text-gray-900">Lead Frontend Developers:</span> Ritvik Rajkumar (rajkumarritvik1@gmail.com) and Santhosh Ilaiyaraja (santhosh.ilaiyaraja21@gmail.com)
                       </div>
                     </div>
                   </div>
