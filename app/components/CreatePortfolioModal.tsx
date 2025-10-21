@@ -44,7 +44,7 @@ const CreatePortfolioModal: React.FC<CreatePortfolioModalProps> = ({
     setCustomScore(50);
   }, [editingPortfolio, isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!portfolioName.trim()) return;
 
@@ -84,10 +84,10 @@ const CreatePortfolioModal: React.FC<CreatePortfolioModalProps> = ({
 
     if (editingPortfolio && onUpdate) {
       // Edit mode
-      onUpdate(editingPortfolio.id, portfolioData);
+      await onUpdate(editingPortfolio.id, portfolioData);
     } else {
       // Create mode
-      onSave(portfolioData);
+      await onSave(portfolioData);
     }
     
     // Reset form
