@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 // Importing icons from Radix UI and React Icons
 import { PaperPlaneIcon, DownloadIcon } from "@radix-ui/react-icons";
+import { Analytics } from "@vercel/analytics/next"
 import jsPDF from "jspdf"; // For PDF generation, though not fully implemented in this snippet
 import { FaUserCircle, FaRobot, FaPlus, FaTrashAlt } from "react-icons/fa";
 import { HiArrowUpCircle } from "react-icons/hi2";
