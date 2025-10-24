@@ -660,7 +660,6 @@ export default function Home() {
                                 {s.summary && <p className="text-sm text-gray-700">{s.summary}</p>}
                                 <p className="text-xs text-gray-500">
                                   {s.source_domain ? `${s.source_domain} • ` : ""}
-                                  {s.source_type ? `[${s.source_type}] ` : ""}{s.impact} impact, {s.direction} direction{ s.date ? ` — ${s.date}` : ""}
                                 </p>
                               </li>
                             ))
@@ -672,7 +671,6 @@ export default function Home() {
                                 {f.summary && <p className="text-sm text-gray-700">{f.summary}</p>}
                                 <p className="text-xs text-gray-500">
                                   {f.source_domain ? `${f.source_domain} • ` : ""}
-                                  {f.source_type ? `[${f.source_type}] ` : ""}{f.impact} impact, {f.direction} direction{ f.date ? ` — ${f.date}` : ""}
                                 </p>
                               </li>
                             ))
