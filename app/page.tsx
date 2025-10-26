@@ -597,6 +597,9 @@ export default function Home() {
                     </p>
                     <div className="text-sm text-gray-700 space-y-2">
                       <div>
+                        <span className="font-medium text-gray-900">Lead Developer:</span> Ishan Singh (26singhishan@gmail.com)
+                      </div>
+                      <div>
                         <span className="font-medium text-gray-900">Lead Backend Developer:</span> Risith Kankanamge (risithcha@gmail.com)
                       </div>
                       <div>
