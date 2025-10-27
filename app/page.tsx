@@ -557,7 +557,7 @@ export default function Home() {
               {/* About Section */}
               <section id="about" className="scroll px-2 sm:px-0 mb-20">
                 <div className="max-w-2xl mx-auto space-y-8">
-                  <h2 className="text-3xl font-bold text-emerald-700 text-center">About EcoVerifier</h2>
+                  <h2 className="text-3xl font-bold text-emerald-700 text-center">An Initiative of the Literally Finance Project</h2>
                   <p className="text-gray-700 text-base leading-relaxed text-center">
                     EcoVerifier analyzes companies’ environmental behavior using real-world ESG events, trusted sources, and AI to generate a custom GreenScore.
                   </p>
