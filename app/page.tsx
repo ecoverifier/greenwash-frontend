@@ -695,7 +695,7 @@ export default function Home() {
                   )}
 
                   {/* Report Display */}
-                  {report && !error && (
+                  {report && !error && ( 
                     <>
                       {/* Company Info */}
                       <div className="space-y-2">
