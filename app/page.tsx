@@ -40,24 +40,61 @@ import {
 type ESGFinding = {
   date: string;
   title: string;
-  impact: "high" | "medium" | "low";
-  direction: "positive" | "negative" | "unclear";
-  source_type: string;
   summary: string;
+
+  // from backend
   source_url: string;
-  // backend now may include:
   source_domain?: string;
+
+  // 6-factor analysis
+  severity: number;     // −1..+1 (your prompt defines −1 = positive, +1 = harm)
+  credibility: number;  // 0..1
+  recency: number;      // 0..1
+  scope: number;        // 0.2..1
+  confidence: number;   // 0..1
+
+  // scoring
+  event_risk_score: number;   // −1..+1 (post-compression)
+  event_score_0_100: number;  // 0..100 (mapped from −1..+1)
+  contribution?: number;      // 0..1 fraction of total |abs(risk)|
+  calc?: {
+    inputs: {
+      severity: number;
+      credibility: number;
+      recency: number;
+      scope: number;
+      confidence: number;
+    };
+    influence: number;
+    raw_risk: number;
+    compressed: number;
+    adjustment: number;
+    final_risk: number;
+  };
 };
 
 type SourceItem = {
   title: string;
   url: string;
   source_domain?: string;
-  source_type: string;
-  impact: "high" | "medium" | "low";
-  direction: "positive" | "negative" | "unclear";
   summary: string;
   date: string;
+  severity: number;
+  credibility: number;
+  scope: number;
+  event_risk_score: number;
+  event_score_0_100: number;
+};
+
+type TopDriver = {
+  title: string;
+  url: string;
+  event_risk_score: number;
+  event_score_0_100: number;
+  contribution_pct: number; // 0..100
+  credibility: number;
+  recency: number;
+  scope: number;
 };
 
 type ReportType = {
@@ -71,14 +108,24 @@ type ReportType = {
     findings: ESGFinding[];
   };
   greenscore: {
-    score: number;
-    base_score?: number;    // NEW
-    rationale?: string;     // NEW
-    factors?: string[];     // make optional for compatibility
+    score: number;             // 0..100 (higher = lower risk)
+    risk_score?: number;       // mean_risk −1..+1 (backend returns this)
+    risk_level?: string;       // low/medium/high/very high
+    rationale?: string;
+    factors?: string[];
     note: string;
+    why?: string;              // NEW: explanatory paragraph
+    top_drivers?: TopDriver[]; // NEW
+    counts?: {
+      total_events: number;
+      harmful_events: number;
+      beneficial_events: number;
+    };
+    base_score?: number;       // keep optional for compatibility
   };
-  sources?: SourceItem[];   // NEW
+  sources?: SourceItem[];
 };
+
 
 
 // Main React component for the ESG Analyzer application
@@ -706,7 +753,50 @@ export default function Home() {
                                 </ul>
                                 {report.greenscore?.note && (
                                   <p className="text-xs text-gray-500 mt-2">{report.greenscore.note}</p>
+                                  
                                 )}
+                                {report.greenscore?.why && (
+                                  <p className="text-sm text-gray-700 mt-3">
+                                    {report.greenscore.why}
+                                  </p>
+                                )}
+
+                                {Array.isArray(report.greenscore?.top_drivers) && report.greenscore!.top_drivers!.length > 0 && (
+                                  <div className="mt-4">
+                                    <h4 className="text-sm font-semibold text-gray-900">Top Drivers</h4>
+                                    <ul className="mt-2 space-y-3">
+                                      {report.greenscore!.top_drivers!.map((d, i) => {
+                                        const pct = Math.max(0, Math.min(100, d.contribution_pct || 0));
+                                        return (
+                                          <li key={i} className="border rounded-md p-3 bg-white">
+                                            <a href={d.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 font-medium hover:underline">
+                                              {d.title}
+                                            </a>
+                                            <div className="mt-1 text-xs text-gray-600">
+                                              Event score: <span className="font-mono">{d.event_score_0_100}</span> •
+                                              Risk (−1..+1): <span className="font-mono">{d.event_risk_score.toFixed(3)}</span> •
+                                              Contribution: <span className="font-mono">{pct.toFixed(1)}%</span>
+                                            </div>
+                                            <div className="mt-2 w-full bg-gray-100 h-2 rounded">
+                                              <div
+                                                className="h-2 rounded"
+                                                style={{
+                                                  width: `${pct}%`,
+                                                  backgroundColor: "#10b981" // emerald-ish bar; feel free to keep your theme token
+                                                }}
+                                              />
+                                            </div>
+                                            <div className="mt-2 text-[11px] text-gray-500">
+                                              Credibility {d.credibility.toFixed(2)} • Recency {d.recency.toFixed(2)} • Scope {d.scope.toFixed(2)}
+                                            </div>
+                                          </li>
+                                        );
+                                      })}
+                                    </ul>
+                                  </div>
+                                )}
+
+
                               </div>
                             </div>
                           );
@@ -718,6 +808,12 @@ export default function Home() {
                       <div className="space-y-2">
                         <h3 className="text-lg font-medium text-gray-900">Audit Summary</h3>
                         <div className="text-base text-gray-700 leading-relaxed">
+                        {report.greenscore?.counts && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            Harmful events: {report.greenscore.counts.harmful_events} • Beneficial events: {report.greenscore.counts.beneficial_events}
+                          </p>
+                  )}
+
                           <p><strong>Total Events:</strong> {report.eco_audit.total_events}</p>
                           <p><strong>High-Risk Issues:</strong> {report.eco_audit.high_risk_flag_count}</p>
                           <p><strong>Concern Level:</strong> {report.eco_audit.concern_level}</p>
@@ -729,46 +825,119 @@ export default function Home() {
                       {/* Sources */}
                       <div className="space-y-6">
                         <h3 className="text-lg font-medium text-gray-900">Sources</h3>
+                        {report.eco_audit?.findings?.length > 0 && (
+  <div className="space-y-2">
+    <h3 className="text-lg font-medium text-gray-900">Event Details</h3>
+    <div className="overflow-x-auto bg-white border border-gray-200 rounded-md">
+      <table className="min-w-full text-sm">
+        <thead className="bg-gray-50 text-gray-600">
+          <tr>
+            <th className="px-3 py-2 text-left">Title</th>
+            <th className="px-3 py-2 text-left">Event Score</th>
+            <th className="px-3 py-2 text-left">Risk</th>
+            <th className="px-3 py-2 text-left">Contribution</th>
+            <th className="px-3 py-2 text-left">Cred.</th>
+            <th className="px-3 py-2 text-left">Recency</th>
+            <th className="px-3 py-2 text-left">Scope</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y">
+          {report.eco_audit.findings.map((f, i) => (
+            <tr key={i} className="hover:bg-gray-50">
+              <td className="px-3 py-2">
+                <a className="text-blue-600 hover:underline" href={f.source_url} target="_blank" rel="noopener noreferrer">
+                  {f.title}
+                </a>
+              </td>
+              <td className="px-3 py-2 font-mono">{f.event_score_0_100}</td>
+              <td className="px-3 py-2 font-mono">{f.event_risk_score.toFixed(3)}</td>
+              <td className="px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs">{Math.round((f.contribution || 0) * 100)}%</span>
+                  <div className="h-2 w-24 bg-gray-200 rounded">
+                    <div
+                      className="h-2 rounded"
+                      style={{
+                        width: `${Math.min(100, Math.max(0, (f.contribution || 0) * 100))}%`,
+                        backgroundColor: "#10b981"
+                      }}
+                    />
+                  </div>
+                </div>
+              </td>
+              <td className="px-3 py-2 font-mono">{f.credibility.toFixed(2)}</td>
+              <td className="px-3 py-2 font-mono">{f.recency.toFixed(2)}</td>
+              <td className="px-3 py-2 font-mono">{f.scope.toFixed(2)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <p className="text-xs text-gray-500">
+      Notes: Event Score is 0–100 (higher = less environmental risk). “Risk” is the underlying −1..+1 value used in aggregation.
+      Contribution indicates how much that event explains the total absolute risk magnitude.
+    </p>
+  </div>
+)}
+
 
                         {/* Prefer top-level sources if present; else fall back to findings */}
                         <ul className="space-y-6 list-none">
-                          {(report.sources && report.sources.length > 0
-                            ? report.sources.map((s, idx) => (
-                                <li key={idx} className="space-y-2 border-t pt-4">
-                                  <a
-                                    href={s.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-blue-600 font-semibold hover:underline"
-                                  >
-                                    {s.title || s.url}
-                                  </a>
-                                  <p className="text-sm text-gray-700">{s.summary}</p>
-                                  <p className="text-xs text-gray-500">
-                                    {s.source_domain ? `${s.source_domain} • ` : ""}
-                                    {s.source_type ? `[${s.source_type}] ` : ""}{s.impact} impact, {s.direction} direction — {s.date}
-                                  </p>
-                                </li>
-                              ))
-                            : report.eco_audit.findings.map((f, idx) => (
-                                <li key={idx} className="space-y-2 border-t pt-4">
-                                  <a
-                                    href={f.source_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-blue-600 font-semibold hover:underline"
-                                  >
-                                    {f.title}
-                                  </a>
-                                  <p className="text-sm text-gray-700">{f.summary}</p>
-                                  <p className="text-xs text-gray-500">
-                                    {f.source_domain ? `${f.source_domain} • ` : ""}
-                                    [{f.source_type}] {f.impact} impact, {f.direction} direction — {f.date}
-                                  </p>
-                                </li>
-                              ))
-                          )}
+                          {(report.sources && report.sources.length > 0 ? report.sources : report.eco_audit.findings).map((s: any, idx: number) => {
+                            const title = s.title || s?.title;
+                            const url = s.url || s?.source_url;
+                            const domain = s.source_domain;
+                            const summary = s.summary;
+                            const date = s.date;
+                            const es100 = typeof s.event_score_0_100 === "number" ? s.event_score_0_100 : undefined;
+                            const risk = typeof s.event_risk_score === "number" ? s.event_risk_score : undefined;
+
+                            return (
+                              <li key={idx} className="space-y-2 border-t pt-4">
+                                <a
+                                  href={url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 font-semibold hover:underline"
+                                >
+                                  {title || url}
+                                </a>
+
+                                {/* per-event badge */}
+                                {(typeof es100 === "number" || typeof risk === "number") && (
+                                  <div className="flex items-center gap-3 text-xs text-gray-700">
+                                    {typeof es100 === "number" && (
+                                      <span className="inline-flex items-center gap-1">
+                                        Event Score:
+                                        <span className="font-mono">{es100}</span>
+                                        <span className="inline-block h-2 w-24 bg-gray-200 rounded">
+                                          <span
+                                            className="block h-2 rounded"
+                                            style={{
+                                              width: `${Math.max(0, Math.min(100, es100))}%`,
+                                              backgroundColor: "#10b981"
+                                            }}
+                                          />
+                                        </span>
+                                      </span>
+                                    )}
+                                    {typeof risk === "number" && (
+                                      <span className="inline-flex items-center gap-1">
+                                        Risk (−1..+1): <span className="font-mono">{risk.toFixed(3)}</span>
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+
+                                <p className="text-sm text-gray-700">{summary}</p>
+                                <p className="text-xs text-gray-500">
+                                  {domain ? `${domain} • ` : ""}{date}
+                                </p>
+                              </li>
+                            );
+                          })}
                         </ul>
+
                       </div>
 
                     </>
