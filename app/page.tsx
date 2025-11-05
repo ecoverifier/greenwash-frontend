@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import axios from "axios";
 // Importing icons from Radix UI and React Icons
 import { PaperPlaneIcon, DownloadIcon } from "@radix-ui/react-icons";
@@ -126,12 +126,25 @@ type ReportType = {
   sources?: SourceItem[];
 };
 
+// helpers for % and 0–100 clamping
+function pct(n: number | undefined) {
+  const v = Math.max(0, Math.min(1, n ?? 0));
+  return Math.round(v * 100);
+}
+function clamp100(n: number | undefined) {
+  const v = Number.isFinite(n as any) ? Number(n) : 0;
+  return Math.max(0, Math.min(100, v));
+}
 
 
 // Main React component for the ESG Analyzer application
 export default function Home() {
   // State for verifying status (e.g., during audit)
   const [verifying, setVerifying] = useState(false);
+
+  // expand/collapse state for per-row details in the sources table
+  const [openRow, setOpenRow] = useState<Record<number, boolean>>({});
+
 
   // State to track if a session (audit) has started
   const [sessionStarted, setSessionStarted] = useState(false);
@@ -646,12 +659,6 @@ export default function Home() {
                       <div>
                         <span className="font-medium text-gray-900">Lead Developer:</span> Ishan Singh (26singhishan@gmail.com)
                       </div>
-                      <div>
-                        <span className="font-medium text-gray-900">Lead Backend Developer:</span> Risith Kankanamge (risithcha@gmail.com)
-                      </div>
-                      <div>
-                        <span className="font-medium text-gray-900">Lead Frontend Developers:</span> Ritvik Rajkumar (rajkumarritvik1@gmail.com) and Santhosh Ilaiyaraja (santhosh.ilaiyaraja21@gmail.com)
-                      </div>
                     </div>
                   </div>
 
@@ -821,124 +828,105 @@ export default function Home() {
                         </div>
                       </div>
 
-                      {/* ESG Findings */}
-                      {/* Sources */}
+                      {/* Sources & Event Details (combined) */}
                       <div className="space-y-6">
-                        <h3 className="text-lg font-medium text-gray-900">Sources</h3>
-                        {report.eco_audit?.findings?.length > 0 && (
-  <div className="space-y-2">
-    <h3 className="text-lg font-medium text-gray-900">Event Details</h3>
-    <div className="overflow-x-auto bg-white border border-gray-200 rounded-md">
-      <table className="min-w-full text-sm">
-        <thead className="bg-gray-50 text-gray-600">
-          <tr>
-            <th className="px-3 py-2 text-left">Title</th>
-            <th className="px-3 py-2 text-left">Event Score</th>
-            <th className="px-3 py-2 text-left">Risk</th>
-            <th className="px-3 py-2 text-left">Contribution</th>
-            <th className="px-3 py-2 text-left">Cred.</th>
-            <th className="px-3 py-2 text-left">Recency</th>
-            <th className="px-3 py-2 text-left">Scope</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y">
-          {report.eco_audit.findings.map((f, i) => (
-            <tr key={i} className="hover:bg-gray-50">
-              <td className="px-3 py-2">
-                <a className="text-blue-600 hover:underline" href={f.source_url} target="_blank" rel="noopener noreferrer">
-                  {f.title}
-                </a>
-              </td>
-              <td className="px-3 py-2 font-mono">{f.event_score_0_100}</td>
-              <td className="px-3 py-2 font-mono">{f.event_risk_score.toFixed(3)}</td>
-              <td className="px-3 py-2">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs">{Math.round((f.contribution || 0) * 100)}%</span>
-                  <div className="h-2 w-24 bg-gray-200 rounded">
-                    <div
-                      className="h-2 rounded"
-                      style={{
-                        width: `${Math.min(100, Math.max(0, (f.contribution || 0) * 100))}%`,
-                        backgroundColor: "#10b981"
-                      }}
-                    />
-                  </div>
-                </div>
-              </td>
-              <td className="px-3 py-2 font-mono">{f.credibility.toFixed(2)}</td>
-              <td className="px-3 py-2 font-mono">{f.recency.toFixed(2)}</td>
-              <td className="px-3 py-2 font-mono">{f.scope.toFixed(2)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-    <p className="text-xs text-gray-500">
-      Notes: Event Score is 0–100 (higher = less environmental risk). “Risk” is the underlying −1..+1 value used in aggregation.
-      Contribution indicates how much that event explains the total absolute risk magnitude.
-    </p>
-  </div>
-)}
+                        <h3 className="text-lg font-medium text-gray-900">Sources &amp; Event Details</h3>
+
+                        {Array.isArray(report.eco_audit?.findings) && report.eco_audit.findings.length > 0 ? (
+                          <div className="overflow-x-auto bg-white border border-gray-200 rounded-md">
+                            <table className="min-w-full text-sm">
+                            <thead className="bg-gray-50 text-gray-600">
+                              <tr>
+                                <th scope="col" className="px-3 py-2 text-left">Title</th>
+                                <th scope="col" className="px-3 py-2 text-left">Event&nbsp;Score</th>
+                                <th scope="col" className="px-3 py-2 text-left">Risk</th>
+                                <th scope="col" className="px-3 py-2 text-left">Severity</th>
+                                <th scope="col" className="px-3 py-2 text-left">Confidence</th>
+                                <th scope="col" className="px-3 py-2 text-left">Contribution</th>
+                                <th scope="col" className="px-3 py-2 text-left">Cred.</th>
+                                <th scope="col" className="px-3 py-2 text-left">Recency</th>
+                                <th scope="col" className="px-3 py-2 text-left">Scope</th>
+                                <th scope="col" className="px-3 py-2 text-left">Date / Source</th>
+                              </tr>
+                            </thead>
 
 
-                        {/* Prefer top-level sources if present; else fall back to findings */}
-                        <ul className="space-y-6 list-none">
-                          {(report.sources && report.sources.length > 0 ? report.sources : report.eco_audit.findings).map((s: any, idx: number) => {
-                            const title = s.title || s?.title;
-                            const url = s.url || s?.source_url;
-                            const domain = s.source_domain;
-                            const summary = s.summary;
-                            const date = s.date;
-                            const es100 = typeof s.event_score_0_100 === "number" ? s.event_score_0_100 : undefined;
-                            const risk = typeof s.event_risk_score === "number" ? s.event_risk_score : undefined;
+                              <tbody className="divide-y">
+                                {report.eco_audit.findings.map((f, i) => {
+                                  const es100 = clamp100(f.event_score_0_100);
+                                  const risk = Number(f.event_risk_score ?? 0);
+                                  const contrPct = Number.isFinite(f.contribution as any) ? pct(f.contribution) : 0;
+                                  const domain = f.source_domain;
+                                  const date = f.date;
 
-                            return (
-                              <li key={idx} className="space-y-2 border-t pt-4">
-                                <a
-                                  href={url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 font-semibold hover:underline"
-                                >
-                                  {title || url}
-                                </a>
+                                  return (
+                                    <Fragment key={i}>
+                                      <tr className="hover:bg-gray-50">
+                                        <td className="px-3 py-2">
+                                          <button
+                                            type="button"
+                                            className="text-left text-blue-600 hover:underline"
+                                            onClick={() => setOpenRow(o => ({ ...o, [i]: !o[i] }))}
+                                            title="Show details"
+                                          >
+                                            {f.title || f.source_url}
+                                          </button>
+                                        </td>
+                                        <td className="px-3 py-2 font-mono">{es100}</td>
+                                        <td className="px-3 py-2 font-mono">{risk.toFixed(3)}</td>
+                                        <td className="px-3 py-2 font-mono">{Number(f.severity ?? 0).toFixed(2)}</td>
+                                        <td className="px-3 py-2 font-mono">{Number(f.confidence ?? 0).toFixed(2)}</td>
 
-                                {/* per-event badge */}
-                                {(typeof es100 === "number" || typeof risk === "number") && (
-                                  <div className="flex items-center gap-3 text-xs text-gray-700">
-                                    {typeof es100 === "number" && (
-                                      <span className="inline-flex items-center gap-1">
-                                        Event Score:
-                                        <span className="font-mono">{es100}</span>
-                                        <span className="inline-block h-2 w-24 bg-gray-200 rounded">
-                                          <span
-                                            className="block h-2 rounded"
-                                            style={{
-                                              width: `${Math.max(0, Math.min(100, es100))}%`,
-                                              backgroundColor: "#10b981"
-                                            }}
-                                          />
-                                        </span>
-                                      </span>
-                                    )}
-                                    {typeof risk === "number" && (
-                                      <span className="inline-flex items-center gap-1">
-                                        Risk (−1..+1): <span className="font-mono">{risk.toFixed(3)}</span>
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
+                                        <td className="px-3 py-2">
+                                          <div className="flex items-center gap-2">
+                                            <span className="font-mono text-xs">{contrPct}%</span>
+                                            <div className="h-2 w-24 bg-gray-200 rounded">
+                                              <div
+                                                className="h-2 rounded"
+                                                style={{ width: `${contrPct}%`, backgroundColor: "#10b981" }}
+                                              />
+                                            </div>
+                                          </div>
+                                        </td>
+                                        <td className="px-3 py-2 font-mono">{Number(f.credibility ?? 0).toFixed(2)}</td>
+                                        <td className="px-3 py-2 font-mono">{Number(f.recency ?? 0).toFixed(2)}</td>
+                                        <td className="px-3 py-2 font-mono">{Number(f.scope ?? 0).toFixed(2)}</td>
+                                        <td className="px-3 py-2 text-xs text-gray-600">
+                                          {date}{domain ? ` • ${domain}` : ""}
+                                        </td>
+                                      </tr>
 
-                                <p className="text-sm text-gray-700">{summary}</p>
-                                <p className="text-xs text-gray-500">
-                                  {domain ? `${domain} • ` : ""}{date}
-                                </p>
-                              </li>
-                            );
-                          })}
-                        </ul>
+                                      {openRow[i] && (
+                                        <tr className="bg-gray-50/60">
+                                          <td className="px-3 py-3 text-sm text-gray-700" colSpan={10}>
+                                            {f.summary && <p className="mb-2">{f.summary}</p>}
+                                            <a
+                                              className="text-blue-600 hover:underline break-all"
+                                              href={f.source_url}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                            >
+                                              {f.source_url}
+                                            </a>
+                                          </td>
+                                        </tr>
+                                      )}
+                                    </Fragment>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-600">No sources found for this audit.</p>
+                        )}
 
+                        <p className="text-xs text-gray-500">
+                          Notes: Event Score is 0–100 (higher = less environmental risk). “Risk” is the underlying −1..+1 value used in aggregation.
+                          Contribution indicates how much that event explains the total absolute risk magnitude.
+                        </p>
                       </div>
+
 
                     </>
                   )}
