@@ -696,7 +696,7 @@ export default function Home() {
                     <section className="space-y-4">
                       <h2 className="text-xl font-semibold text-gray-900">Audit Status</h2>
                       <div className="text-gray-500 italic animate-pulse">
-                        Auditing the company using environmental news and Claude reasoning...
+                        Auditing the company using environmental news and Gemini Flash reasoning...
                       </div>
                     </section>
                   )}
