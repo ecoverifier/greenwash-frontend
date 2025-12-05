@@ -684,7 +684,7 @@ export default function Home() {
 
                 {/* Submitted Claim */}
                 <section className="space-y-4">
-                  <h2 className="text-xl font-semibold text-gray-900">Submitted Company</h2>
+                  <h2 className="text-xl font-semibold text-gray-900">Company you asked us to check</h2>
                   <div className="bg-gray-50 border border-gray-200 rounded-md p-5 text-base leading-relaxed">
                     {company}
                   </div>
@@ -712,119 +712,245 @@ export default function Home() {
                       </div>
 
                       {/* GreenScore Visualization */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-lg font-medium text-gray-900">GreenScore</h3>
-                          <AddToPortfolioButton
-                            company={report.company}
-                            greenscore={Math.max(0, Math.min(100, report.greenscore?.score ?? 0))}
-                            reportId={activeReportId || undefined}
-                            className="ml-4"
+                      {/* 2. GreenScore – easy, visual, and explained */}
+<div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
+  <div className="flex items-start justify-between gap-4">
+    <div>
+      <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+        <span>2. GreenScore</span>
+        {(() => {
+          const gs = Math.max(0, Math.min(100, report.greenscore?.score ?? 0));
+          let label = "Medium risk";
+          let badgeClass = "bg-amber-100 text-amber-800 border-amber-200";
+
+          if (gs >= 80) {
+            label = "Low risk";
+            badgeClass = "bg-emerald-100 text-emerald-800 border-emerald-200";
+          } else if (gs < 50) {
+            label = "High risk";
+            badgeClass = "bg-red-100 text-red-800 border-red-200";
+          }
+
+          return (
+            <span
+              className={`
+                inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border
+                ${badgeClass}
+              `}
+            >
+              {label}
+            </span>
+          );
+        })()}
+      </h3>
+
+      <p className="mt-1 text-sm text-gray-600 max-w-xl">
+        GreenScore is a 0–100 rating of this company&apos;s environmental risk based on recent,
+        independent news and reports. <strong>Higher scores mean lower environmental risk.</strong>
+      </p>
+    </div>
+
+    <AddToPortfolioButton
+      company={report.company}
+      greenscore={Math.max(0, Math.min(100, report.greenscore?.score ?? 0))}
+      reportId={activeReportId || undefined}
+      className="shrink-0"
+    />
+  </div>
+
+  {(() => {
+    const gs = Math.max(0, Math.min(100, report.greenscore?.score ?? 0));
+    const base = typeof report.greenscore.base_score === "number"
+      ? report.greenscore.base_score
+      : null;
+
+    const factors =
+      report.greenscore.factors && report.greenscore.factors.length > 0
+        ? report.greenscore.factors
+        : report.greenscore.rationale
+        ? [report.greenscore.rationale]
+        : [];
+
+    const topThreeFactors = factors.slice(0, 3);
+
+    return (
+      <div className="flex flex-col md:flex-row items-start gap-6">
+        {/* Circular meter */}
+        <div className="flex flex-col items-center gap-2">
+          <svg width="110" height="110" viewBox="0 0 36 36">
+            <circle
+              cx="18"
+              cy="18"
+              r="16"
+              fill="none"
+              stroke="#e5e7eb"
+              strokeWidth="3.5"
+            />
+            <circle
+              cx="18"
+              cy="18"
+              r="16"
+              fill="none"
+              stroke={`hsl(${(gs / 100) * 120}, 100%, 40%)`}
+              strokeWidth="3.5"
+              strokeDasharray="100"
+              strokeDashoffset={100 - gs}
+              strokeLinecap="round"
+              transform="rotate(-90 18 18)"
+              style={{ transition: "stroke-dashoffset 0.8s ease, stroke 0.8s ease" }}
+            />
+            <text
+              x="18"
+              y="20.5"
+              textAnchor="middle"
+              fill="#111827"
+              fontSize="11"
+              fontWeight="bold"
+            >
+              {gs}%
+            </text>
+          </svg>
+          <p className="text-xs text-gray-500 text-center">
+            0 = very high risk • 100 = very low risk
+          </p>
+        </div>
+
+        {/* Explanation / drivers */}
+        <div className="flex-1 space-y-3">
+          {base !== null && (
+            <p className="text-xs text-gray-500">
+              <span className="font-medium">Base score:</span> {base} &nbsp;•&nbsp;
+              <span className="font-medium">Final score:</span> {gs}
+            </p>
+          )}
+
+          {report.greenscore?.why && (
+            <p className="text-sm text-gray-700">
+              {report.greenscore.why}
+            </p>
+          )}
+
+          {topThreeFactors.length > 0 && (
+            <div className="space-y-1">
+              <h4 className="text-sm font-semibold text-gray-900">
+                Main reasons for this score
+              </h4>
+              <ul className="mt-1 text-sm text-gray-700 list-disc pl-5 space-y-1.5">
+                {topThreeFactors.map((f: string, i: number) => (
+                  <li key={i}>{f}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {report.greenscore?.note && (
+            <p className="text-xs text-gray-500">
+              {report.greenscore.note}
+            </p>
+          )}
+
+          {/* Simple legend */}
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+            <div className="flex items-center gap-2 rounded-md border border-emerald-100 bg-emerald-50 px-2.5 py-1.5">
+              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
+              <div>
+                <p className="font-semibold text-emerald-900">80–100</p>
+                <p className="text-[11px] text-emerald-900/80">
+                  Low environmental risk, strong record.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 rounded-md border border-amber-100 bg-amber-50 px-2.5 py-1.5">
+              <span className="inline-block h-2 w-2 rounded-full bg-amber-500" />
+              <div>
+                <p className="font-semibold text-amber-900">50–79</p>
+                <p className="text-[11px] text-amber-900/80">
+                  Medium risk, mixed record.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 rounded-md border border-red-100 bg-red-50 px-2.5 py-1.5">
+              <span className="inline-block h-2 w-2 rounded-full bg-red-500" />
+              <div>
+                <p className="font-semibold text-red-900">0–49</p>
+                <p className="text-[11px] text-red-900/80">
+                  High risk, repeated or serious issues.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Optional: show top drivers list, but this is more “advanced” */}
+          {Array.isArray(report.greenscore?.top_drivers) &&
+            report.greenscore.top_drivers.length > 0 && (
+              <div className="mt-4">
+                <h4 className="text-sm font-semibold text-gray-900">
+                  Key articles influencing this score
+                </h4>
+                <ul className="mt-2 space-y-3">
+                  {report.greenscore.top_drivers.map((d: any, i: number) => {
+                    const pct = Math.max(0, Math.min(100, d.contribution_pct || 0));
+                    return (
+                      <li key={i} className="border rounded-md p-3 bg-gray-50">
+                        <a
+                          href={d.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 font-medium hover:underline"
+                        >
+                          {d.title}
+                        </a>
+                        <div className="mt-1 text-[11px] text-gray-600">
+                          Event score: <span className="font-mono">{d.event_score_0_100}</span> •
+                          Impact (−1..+1):{" "}
+                          <span className="font-mono">
+                            {Number(d.event_risk_score ?? 0).toFixed(3)}
+                          </span>{" "}
+                          • Contribution:{" "}
+                          <span className="font-mono">
+                            {Math.max(0, Math.min(100, d.contribution_pct || 0)).toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="mt-2 w-full bg-gray-200 h-2 rounded">
+                          <div
+                            className="h-2 rounded"
+                            style={{
+                              width: `${pct}%`,
+                              backgroundColor: "#10b981",
+                            }}
                           />
                         </div>
+                        <div className="mt-2 text-[11px] text-gray-500">
+                          Credibility {d.credibility.toFixed(2)} • Recency{" "}
+                          {d.recency.toFixed(2)} • Scope {d.scope.toFixed(2)}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+        </div>
+      </div>
+    );
+  })()}
+</div>
 
-                        {(() => {
-                          const gs = Math.max(0, Math.min(100, report.greenscore?.score ?? 0));
-                          return (
-                            <div className="flex items-start gap-6">
-                              {/* Circular meter */}
-                              <svg width="100" height="100" viewBox="0 0 36 36">
-                                <circle cx="18" cy="18" r="16" fill="none" stroke="#e5e7eb" strokeWidth="3" />
-                                <circle
-                                  cx="18" cy="18" r="16" fill="none"
-                                  stroke={`hsl(${(gs / 100) * 120}, 100%, 40%)`}
-                                  strokeWidth="3" strokeDasharray="100"
-                                  strokeDashoffset={100 - gs}
-                                  strokeLinecap="round"
-                                  transform="rotate(-90 18 18)"
-                                  style={{ transition: "stroke-dashoffset 1s ease, stroke 1s ease" }}
-                                />
-                                <text x="18" y="21" textAnchor="middle" fill="#111827" fontSize="10" fontWeight="bold">
-                                  {gs}%
-                                </text>
-                              </svg>
-
-                              {/* Rationale / factors */}
-                              <div className="flex-1">
-                                {/* Show base vs final if available */}
-                                {typeof report.greenscore.base_score === "number" && (
-                                  <p className="text-xs text-gray-500 mb-1">
-                                    Base: {report.greenscore.base_score} • Final: {gs}
-                                  </p>
-                                )}
-                                <ul className="text-sm text-gray-700 list-disc pl-5 space-y-1">
-                                  {(
-                                    (report.greenscore.factors && report.greenscore.factors.length > 0)
-                                      ? report.greenscore.factors
-                                      : (report.greenscore.rationale ? [report.greenscore.rationale] : [])
-                                  ).map((f, i) => <li key={i}>{f}</li>)}
-                                </ul>
-                                {report.greenscore?.note && (
-                                  <p className="text-xs text-gray-500 mt-2">{report.greenscore.note}</p>
-                                  
-                                )}
-                                {report.greenscore?.why && (
-                                  <p className="text-sm text-gray-700 mt-3">
-                                    {report.greenscore.why}
-                                  </p>
-                                )}
-
-                                {Array.isArray(report.greenscore?.top_drivers) && report.greenscore!.top_drivers!.length > 0 && (
-                                  <div className="mt-4">
-                                    <h4 className="text-sm font-semibold text-gray-900">Top Drivers</h4>
-                                    <ul className="mt-2 space-y-3">
-                                      {report.greenscore!.top_drivers!.map((d, i) => {
-                                        const pct = Math.max(0, Math.min(100, d.contribution_pct || 0));
-                                        return (
-                                          <li key={i} className="border rounded-md p-3 bg-white">
-                                            <a href={d.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 font-medium hover:underline">
-                                              {d.title}
-                                            </a>
-                                            <div className="mt-1 text-xs text-gray-600">
-                                              Event score: <span className="font-mono">{d.event_score_0_100}</span> •
-                                              Risk (−1..+1): <span className="font-mono">{d.event_risk_score.toFixed(3)}</span> •
-                                              Contribution: <span className="font-mono">{pct.toFixed(1)}%</span>
-                                            </div>
-                                            <div className="mt-2 w-full bg-gray-100 h-2 rounded">
-                                              <div
-                                                className="h-2 rounded"
-                                                style={{
-                                                  width: `${pct}%`,
-                                                  backgroundColor: "#10b981" // emerald-ish bar; feel free to keep your theme token
-                                                }}
-                                              />
-                                            </div>
-                                            <div className="mt-2 text-[11px] text-gray-500">
-                                              Credibility {d.credibility.toFixed(2)} • Recency {d.recency.toFixed(2)} • Scope {d.scope.toFixed(2)}
-                                            </div>
-                                          </li>
-                                        );
-                                      })}
-                                    </ul>
-                                  </div>
-                                )}
-
-
-                              </div>
-                            </div>
-                          );
-                        })()}
-                      </div>
 
 
                       {/* Audit Summary */}
-                      <div className="space-y-2">
-                        <h3 className="text-lg font-medium text-gray-900">Audit Summary</h3>
-                        <div className="text-base text-gray-700 leading-relaxed">
+                      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-2">
+                        <h3 className="text-lg font-semibold text-gray-900">3. What we found</h3>
                         {report.greenscore?.counts && (
                           <p className="text-sm text-gray-600 mt-1">
-                            Harmful events: {report.greenscore.counts.harmful_events} • Beneficial events: {report.greenscore.counts.beneficial_events}
+                            Harmful events: {report.greenscore.counts.harmful_events} • Beneficial events:{" "}
+                            {report.greenscore.counts.beneficial_events}
                           </p>
-                  )}
-
-                          <p><strong>Total Events:</strong> {report.eco_audit.total_events}</p>
-                          <p><strong>High-Risk Issues:</strong> {report.eco_audit.high_risk_flag_count}</p>
-                          <p><strong>Concern Level:</strong> {report.eco_audit.concern_level}</p>
+                        )}
+                        <div className="text-sm text-gray-700 leading-relaxed space-y-1 mt-2">
+                          <p><strong>Total events reviewed:</strong> {report.eco_audit.total_events}</p>
+                          <p><strong>Serious issues flagged:</strong> {report.eco_audit.high_risk_flag_count}</p>
+                          <p><strong>Overall concern level:</strong> {report.eco_audit.concern_level}</p>
                           <p className="mt-2">{report.eco_audit.summary}</p>
                         </div>
                       </div>
