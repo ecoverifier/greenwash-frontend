@@ -868,15 +868,7 @@ export default function Home() {
                   </p>
                 </div>
 
-                <AddToPortfolioButton
-                  company={report.company}
-                  greenscore={Math.max(
-                    0,
-                    Math.min(100, report.greenscore?.score ?? 0)
-                  )}
-                  reportId={activeReportId || undefined}
-                  className="shrink-0"
-                />
+                
               </div>
 
               {(() => {
