@@ -175,7 +175,7 @@ export default function Home() {
   // Placeholder typing animation for the input field
   const examples = [
     "Enter a company name",
-    "e.g. Amazon, Apple, Shell, or Tesla",
+    "e.g. Apple, Shell, or Tesla",
   ];
 
   const [animatedPlaceholder, setAnimatedPlaceholder] = useState("");
