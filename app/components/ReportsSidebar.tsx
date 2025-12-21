@@ -82,7 +82,7 @@ const ReportsSidebar: React.FC<ReportsSidebarProps> = ({
           title="New Score"
         >
           <RiChatNewLine className="w-5 h-5" />
-          New Chat
+          Run New Search
         </button>
       </div>
 
