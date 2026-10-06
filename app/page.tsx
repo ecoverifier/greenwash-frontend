@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, Fragment } from "react";
-import axios from "axios";
 import { Analytics } from "@vercel/analytics/next";
 import { HiArrowUpCircle } from "react-icons/hi2";
 import { FaArrowDown, FaChevronDown, FaChevronUp } from "react-icons/fa";
@@ -15,90 +14,8 @@ import { collection, addDoc, getDocs, query, where } from "firebase/firestore";
 /** ---------------------------
  * Types
  * -------------------------- */
-type ESGFinding = {
-  date: string;
-  article_date?: string | null;
-  title: string;
-  summary: string;
-  source_url: string;
-  source_domain?: string;
-
-  trusted_for_score?: boolean;
-  domain_is_trusted?: boolean;
-  domain_credibility_score?: number;
-  domain_category?: string;
-
-  severity: number;
-  credibility: number;
-  recency: number;
-  scope: number;
-  confidence: number;
-
-  event_risk_score: number;
-  event_score_0_100: number;
-  contribution?: number;
-  calc?: {
-    inputs: {
-      severity: number;
-      credibility: number;
-      recency: number;
-      scope: number;
-      confidence: number;
-    };
-    influence: number;
-    raw_risk: number;
-    compressed: number;
-    final_risk: number;
-  };
-};
-
-type TopDriver = {
-  title: string;
-  url: string;
-  event_risk_score: number;
-  event_score_0_100: number;
-  contribution_pct: number;
-  credibility: number;
-  recency: number;
-  scope: number;
-  domain_credibility_score?: number;
-  domain_category?: string;
-  domain_is_trusted?: boolean;
-};
-
-type ReportType = {
-  company: string;
-  eco_audit: {
-    last_audit_date: string;
-    total_events: number;
-    high_risk_flag_count: number;
-    concern_level: string;
-    summary: string;
-    findings: ESGFinding[];
-  };
-  greenscore: {
-    score: number;
-    risk_score?: number;
-    risk_level?: string;
-    rationale?: string;
-    factors?: string[];
-    note: string;
-    why?: string;
-    top_drivers?: TopDriver[];
-    counts?: {
-      total_events: number;
-      harmful_events: number;
-      beneficial_events: number;
-      trusted_events_used_for_score: number;
-    };
-    trusted_thresholds?: {
-      min_domain_cred: number;
-      min_model_cred: number;
-      min_trusted_events_for_score: number;
-    };
-    base_score?: number;
-  };
-};
+import type { ReportType } from "./types/audit";
+import { generateAudit, AuditError } from "./utils/openrouter";
 
 /** ---------------------------
  * Helpers
@@ -195,6 +112,8 @@ function getTopReasons(report: ReportType | null) {
 }
 
 export default function Home() {
+  const [apiKey, setApiKey] = useState(process.env.NEXT_PUBLIC_OPENROUTER_API_KEY ?? "");
+  const [model, setModel] = useState("openai/gpt-4.1-mini");
   const [verifying, setVerifying] = useState(false);
   const [openRow, setOpenRow] = useState<Record<number, boolean>>({});
   const [showMethodology, setShowMethodology] = useState(false);
@@ -298,6 +217,14 @@ export default function Home() {
     if (e) e.preventDefault();
     if (!company.trim() || loading) return;
 
+    if (!apiKey.trim()) {
+      setError("Enter your OpenRouter API key above to run an audit.");
+      return;
+    }
+    if (!model.trim() || company.trim().length > 200) {
+      setError("Enter a model ID and a company name under 200 characters.");
+      return;
+    }
     setError("");
     setIsRetryableError(false);
     setLoading(true);
@@ -315,28 +242,13 @@ export default function Home() {
     setActiveReportId(newId);
 
     try {
-      const res = await axios.get(
-        `https://greenwash-api-production.up.railway.app/generate-audit?company=${encodeURIComponent(company)}`,
-        {
-          timeout: 90000,
-          validateStatus: (status) => status >= 200 && status < 500,
-        }
-      );
-
-      if (res.status >= 400) {
-        throw { response: res, status: res.status, data: res.data };
-      }
-
-      const result = res.data as ReportType;
-
-      if (typeof result?.greenscore?.score !== "number") {
-        throw new Error("Malformed API response (missing greenscore.score)");
-      }
+      const result = await generateAudit(company.trim(), apiKey.trim(), model.trim());
 
       setReports((prev) => prev.map((r) => (r.id === newId ? { ...r, report: result } : r)));
       setActiveReportId(newId);
       setReport(result);
 
+      try {
       if (!user) {
         const updated = [{ id: newId, company, report: result }, ...reports];
         localStorage.setItem("anon_reports", JSON.stringify(updated));
@@ -348,65 +260,14 @@ export default function Home() {
           createdAt: new Date().toISOString(),
         });
       }
-    } catch (err: any) {
-      if (err?.code === "ECONNABORTED" || err?.message?.includes("timeout")) {
-        setError("The request timed out. The analysis is taking longer than expected. Please try again.");
-        setIsRetryableError(true);
-      } else if (err?.code === "ERR_NETWORK" || err?.message?.includes("Network Error")) {
-        setError("Network error. Please check your internet connection and try again.");
-        setIsRetryableError(true);
-      } else if (err?.code === "ERR_INTERNET_DISCONNECTED") {
-        setError("No internet connection. Please check your connection and try again.");
-        setIsRetryableError(true);
-      } else if (!err?.response && !err?.status) {
-        setError("Unable to connect to our servers. Please check your internet connection and try again.");
-        setIsRetryableError(true);
-      } else if (err?.response?.data?.detail || err?.data?.detail) {
-        const errorDetail = err.response?.data?.detail || err.data?.detail;
-        const errorCode = errorDetail.error;
-        const errorMessage = errorDetail.message;
-        const retryGuidance = errorDetail.retry_guidance;
-
-        switch (errorCode) {
-          case "EMPTY_INPUT":
-            setError("Please enter a company name to analyze.");
-            setIsRetryableError(false);
-            break;
-          case "TOO_LONG":
-            setError("Company name is too long. Please provide a shorter, valid company name.");
-            setIsRetryableError(false);
-            break;
-          case "VALIDATION_SYSTEM_ERROR":
-            setError(retryGuidance || "Our validation system is temporarily unavailable. Please try again in a few moments.");
-            setIsRetryableError(true);
-            break;
-          case "COMPANY_REJECTED":
-            setError("The company name you entered appears to be invalid or not a legitimate business. Please enter a real company name.");
-            setIsRetryableError(false);
-            break;
-          case "INVALID_COMPANY":
-            setError("Please enter a valid, real company name for analysis.");
-            setIsRetryableError(false);
-            break;
-          default:
-            if (errorMessage) {
-              setError(`Validation failed: ${errorMessage}`);
-              setIsRetryableError(!!retryGuidance);
-            } else {
-              setError("Company validation failed. Please try a different company name.");
-              setIsRetryableError(false);
-            }
-        }
-      } else if ((err?.response?.status || err?.status) === 429) {
-        setError("Too many requests. Please wait a moment before trying again.");
-        setIsRetryableError(true);
-      } else if ((err?.response?.status || err?.status) >= 500) {
-        setError("Our servers are experiencing issues. Please try again later.");
-        setIsRetryableError(true);
-      } else {
-        setError("Failed to retrieve audit report. Please check your connection and try again.");
-        setIsRetryableError(true);
+      } catch {
+        setError("Audit completed, but could not save history. You can still read the report below.");
       }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to generate audit. Please try again.");
+      setIsRetryableError(err instanceof AuditError ? err.retryable : true);
+      setReports((prev) => prev.filter((r) => r.id !== newId));
+      setActiveReportId(null);
     } finally {
       setLoading(false);
       setVerifying(false);
@@ -528,6 +389,19 @@ export default function Home() {
       </div>
 
       <div className="flex-1 px-4 sm:px-8 py-6 min-h-screen">
+        <details className="mx-auto mb-6 max-w-3xl rounded-2xl border border-slate-200 bg-white p-4" open={!apiKey}>
+          <summary className="cursor-pointer font-semibold text-slate-900">OpenRouter settings</summary>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <label className="text-sm text-slate-700">API key
+              <input type="password" autoComplete="off" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="sk-or-…" disabled={loading} className="mt-1 w-full rounded-xl border border-slate-300 p-2 text-slate-900" />
+            </label>
+            <label className="text-sm text-slate-700">Model ID
+              <input value={model} onChange={(e) => setModel(e.target.value)} disabled={loading} className="mt-1 w-full rounded-xl border border-slate-300 p-2 text-slate-900" />
+            </label>
+          </div>
+          <p className="mt-2 text-xs text-slate-500">Manually entered keys stay in memory. A configured default key is included in browser code; use it only locally. Requests go directly to OpenRouter and use paid model and web search credits. <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener noreferrer" className="underline">Manage keys</a></p>
+        </details>
+
         {!sessionStarted ? (
           <div className="w-full max-w-3xl mx-auto text-center pt-10 sm:pt-14">
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/70 px-4 py-1.5 text-xs text-emerald-900 shadow-sm backdrop-blur">
@@ -764,12 +638,13 @@ export default function Home() {
                     </section>
                   )}
 
-                  {report && !error && (
+                  {report && (
                     <>
                       <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="rounded-3xl border border-slate-200 bg-white/80 p-5">
                           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">What we found</p>
                           <p className="mt-2 text-sm text-slate-700 leading-relaxed">{report.eco_audit.summary}</p>
+                          <p className="mt-3 text-xs text-slate-500">{report.greenscore.note}</p>
                         </div>
 
                         <div className="rounded-3xl border border-slate-200 bg-white/80 p-5">
@@ -1026,7 +901,7 @@ export default function Home() {
                               <div className="rounded-xl bg-slate-50 border border-slate-200 p-3">
                                 <p className="text-slate-500">Scoring rule</p>
                                 <p className="text-[11px] leading-snug">
-                                  We score trusted events first. If too few trusted events exist, we fall back to all events.
+                                  Score = 50 − 50 × mean event impact. Impact = severity × credibility × recency × scope × confidence; beneficial events are negative. Source credibility is model-assessed, not independently verified.
                                 </p>
                               </div>
                             </div>

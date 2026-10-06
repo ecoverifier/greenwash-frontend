@@ -1,36 +1,27 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EcoVerifier
 
-## Getting Started
+A Next.js frontend for environmental company research, using OpenRouter directly from the browser. No separate audit backend or API routes are required.
 
-First, run the development server:
+## Run
 
-```bash
+```sh
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000, expand **OpenRouter settings**, enter your own [OpenRouter API key](https://openrouter.ai/settings/keys), and run a company audit. The default model is `openai/gpt-4.1-mini`; you can enter another OpenRouter model ID supporting JSON output and tools.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Manually entered keys stay in React memory and clear on reload. For personal local use, `.env.local` can set `NEXT_PUBLIC_OPENROUTER_API_KEY` to prefill the key. This file is gitignored, but the key is included in browser code: do not deploy a build containing your personal key publicly. Keys are never stored in report history or Firebase. Public deployments should let each user supply their own key. Requests consume the key owner's model and web-search credits.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Audits call `https://openrouter.ai/api/v1/chat/completions` with the [OpenRouter web search server tool](https://openrouter.ai/docs/guides/features/server-tools/web-search). Responses are validated before display. The browser computes GreenScore as `50 - 50 * mean(event impact)`, where impact is severity × credibility × recency × scope × confidence, with harmful events positive and beneficial events negative. This replaces the removed backend's scoring system. Sources and factors are AI assessments, not independently verified ESG ratings.
 
-## Learn More
+Anonymous reports and portfolios use local storage. Existing Google sign-in and signed-in history/portfolios still use Firebase as configured in `app/firebase.ts`.
 
-To learn more about Next.js, take a look at the following resources:
+## Checks
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```sh
+npx tsc --noEmit
+npm run build
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The older BACKEND_*, QUICK_START, STATUS_REPORT, and test-backend-connection.js files describe the retired Railway integration and are historical only.
