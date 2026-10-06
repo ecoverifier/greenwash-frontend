@@ -112,8 +112,6 @@ function getTopReasons(report: ReportType | null) {
 }
 
 export default function Home() {
-  const [apiKey, setApiKey] = useState(process.env.NEXT_PUBLIC_OPENROUTER_API_KEY ?? "");
-  const [model, setModel] = useState("openai/gpt-4.1-mini");
   const [verifying, setVerifying] = useState(false);
   const [openRow, setOpenRow] = useState<Record<number, boolean>>({});
   const [showMethodology, setShowMethodology] = useState(false);
@@ -217,12 +215,8 @@ export default function Home() {
     if (e) e.preventDefault();
     if (!company.trim() || loading) return;
 
-    if (!apiKey.trim()) {
-      setError("Enter your OpenRouter API key above to run an audit.");
-      return;
-    }
-    if (!model.trim() || company.trim().length > 200) {
-      setError("Enter a model ID and a company name under 200 characters.");
+    if (company.trim().length > 200) {
+      setError("Enter a company name under 200 characters.");
       return;
     }
     setError("");
@@ -242,7 +236,7 @@ export default function Home() {
     setActiveReportId(newId);
 
     try {
-      const result = await generateAudit(company.trim(), apiKey.trim(), model.trim());
+      const result = await generateAudit(company.trim());
 
       setReports((prev) => prev.map((r) => (r.id === newId ? { ...r, report: result } : r)));
       setActiveReportId(newId);
@@ -389,19 +383,6 @@ export default function Home() {
       </div>
 
       <div className="flex-1 px-4 sm:px-8 py-6 min-h-screen">
-        <details className="mx-auto mb-6 max-w-3xl rounded-2xl border border-slate-200 bg-white p-4" open={!apiKey}>
-          <summary className="cursor-pointer font-semibold text-slate-900">OpenRouter settings</summary>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <label className="text-sm text-slate-700">API key
-              <input type="password" autoComplete="off" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="sk-or-…" disabled={loading} className="mt-1 w-full rounded-xl border border-slate-300 p-2 text-slate-900" />
-            </label>
-            <label className="text-sm text-slate-700">Model ID
-              <input value={model} onChange={(e) => setModel(e.target.value)} disabled={loading} className="mt-1 w-full rounded-xl border border-slate-300 p-2 text-slate-900" />
-            </label>
-          </div>
-          <p className="mt-2 text-xs text-slate-500">Manually entered keys stay in memory. A configured default key is included in browser code; use it only locally. Requests go directly to OpenRouter and use paid model and web search credits. <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener noreferrer" className="underline">Manage keys</a></p>
-        </details>
-
         {!sessionStarted ? (
           <div className="w-full max-w-3xl mx-auto text-center pt-10 sm:pt-14">
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/70 px-4 py-1.5 text-xs text-emerald-900 shadow-sm backdrop-blur">
