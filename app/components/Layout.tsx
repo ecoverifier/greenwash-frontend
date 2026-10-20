@@ -1,142 +1,48 @@
 "use client";
-import React, { useState, useEffect } from 'react';
-import { auth } from '@/app/firebase';
-import { signInWithPopup, signOut, provider } from '@/app/firebase';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { FiLogIn, FiLogOut, FiMenu, FiX } from 'react-icons/fi';
-import { FaPlus } from 'react-icons/fa';
+
+import { cloneElement, isValidElement, useEffect, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
+import { onAuthStateChanged, type User } from "firebase/auth";
+import { auth, provider, signInWithPopup, signOut } from "@/app/firebase";
 
 interface LayoutProps {
-  children: React.ReactNode;
+  children: ReactNode;
   title?: string;
   showSidebar?: boolean;
-  sidebarContent?: React.ReactNode;
+  sidebarContent?: ReactNode;
 }
 
-const Layout: React.FC<LayoutProps> = ({ 
-  children, 
-  title = "EcoVerifier", 
-  showSidebar = false,
-  sidebarContent 
-}) => {
+export default function Layout({ children, showSidebar = false, sidebarContent }: LayoutProps) {
   const [user, setUser] = useState<User | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [accountError, setAccountError] = useState("");
+  const [accountBusy, setAccountBusy] = useState(false);
+  const historyRef = useRef<HTMLDialogElement>(null);
+  useEffect(() => onAuthStateChanged(auth, setUser), []);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-    });
-    return () => unsubscribe();
-  }, []);
+  async function accountAction() {
+    setAccountError(""); setAccountBusy(true);
+    try { if (user) await signOut(auth); else await signInWithPopup(auth, provider); }
+    catch { setAccountError("Couldn’t update your account. Please try again."); }
+    finally { setAccountBusy(false); }
+  }
+  const history = isValidElement<{ onCloseSidebar?: () => void }>(sidebarContent)
+    ? cloneElement(sidebarContent, { onCloseSidebar: () => historyRef.current?.close() }) : sidebarContent;
 
-  const handleLogin = async () => {
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (err) {
-      console.error("Login failed:", err);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-    } catch (err) {
-      console.error("Logout failed:", err);
-    }
-  };
-
-  return (
-    <>
-      {/* Header Section - Consistent across all pages */}
-      <header className={`${showSidebar ? 'md:ml-64' : ''} sticky top-0 z-50 bg-white px-6 py-3 flex items-center justify-between relative shadow-sm border-b`}>
-        {/* Left: Mobile menu + Brand */}
-        <div className="flex items-center gap-3">
-          {/* Mobile toggle (only show if sidebar is enabled) */}
-          {showSidebar && (
-            <button
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="md:hidden text-emerald-600"
-              aria-label="Toggle Sidebar"
-            >
-              {isSidebarOpen ? <FiX className="w-6 h-6" /> : <FiMenu className="w-6 h-6" />}
-            </button>
-          )}
-
-          {/* Brand for desktop */}
-          <div className="hidden md:flex items-center gap-2">
-            <a href="/" className="flex items-center gap-2">
-              <img src="/favicon.ico" alt="EcoVerifier Logo" className="w-6 h-6" />
-              <span className="text-lg font-semibold text-emerald-600 tracking-tight">
-                EcoVerifier
-              </span>
-            </a>
-          </div>
-        </div>
-
-        {/* Center: Brand on mobile only */}
-        <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2 md:hidden">
-          <a href="/" className="flex items-center gap-2">
-            <img src="/favicon.ico" alt="EcoVerifier Logo" className="w-6 h-6" />
-            <span className="text-base font-semibold text-emerald-600 tracking-tight">
-              EcoVerifier
-            </span>
-          </a>
-        </div>
-
-        {/* Right: Navigation and Login/Logout */}
-        <div className="flex items-center gap-3">
-          {/* Navigation Links - Show on mobile when no sidebar, hide when sidebar exists */}
-          <nav className={`${showSidebar ? 'hidden lg:flex' : 'flex'} items-center gap-2 lg:gap-4`}>
-            
-          </nav>
-          
-          {user ? (
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 text-sm font-medium text-red-500 hover:text-red-600 transition hover:bg-stone-100 p-2 rounded-md"
-            >
-              <FiLogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Logout</span>
-            </button>
-          ) : (
-            <button
-              onClick={handleLogin}
-              className="flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition hover:bg-stone-100 p-2 rounded-md"
-            >
-              <FiLogIn className="w-4 h-4" />
-              <span className="hidden sm:inline">Login</span>
-            </button>
-          )}
-        </div>
-      </header>
-
-      {/* Sidebar (if enabled) */}
-      {showSidebar && sidebarContent && (
-        <>
-          <aside
-            className={`fixed top-0 left-0 h-screen w-full max-w-xs md:w-64 bg-white shadow-xl flex flex-col transition-transform duration-300 ease-in-out z-[60]
-              ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
-              md:translate-x-0 md:z-40 border-r border-gray-100`}
-          >
-            {sidebarContent}
-          </aside>
-
-          {/* Mobile Overlay for sidebar */}
-          {isSidebarOpen && (
-            <div
-              className="fixed inset-0 bg-black bg-opacity-30 z-30 md:hidden"
-              onClick={() => setIsSidebarOpen(false)}
-            />
-          )}
-        </>
-      )}
-
-      {/* Main Content */}
-      <main className={`${showSidebar ? 'md:pl-64' : ''} min-h-screen bg-gray-50`}>
-        {children}
-      </main>
-    </>
-  );
-};
-
-export default Layout;
+  return <>
+    <header className="site-header">
+      <Link href="/" className="site-brand" aria-label="EcoVerifier home"><span className="brand-mark" aria-hidden="true">e</span>EcoVerifier</Link>
+      <nav aria-label="Main navigation" className="site-nav">
+        {showSidebar && <button onClick={() => historyRef.current?.showModal()}>History</button>}
+        <button onClick={accountAction} disabled={accountBusy}>{accountBusy ? "Please wait…" : user ? "Sign out" : "Sign in"}</button>
+      </nav>
+    </header>
+    {accountError && <p role="alert" className="account-notice">{accountError}</p>}
+    {showSidebar && <dialog ref={historyRef} className="history-dialog" aria-labelledby="history-title" onClick={(event) => { if (event.target === event.currentTarget) historyRef.current?.close(); }}>
+      <div className="history-inner">
+        <div className="history-heading"><h2 id="history-title">Your reports</h2><button onClick={() => historyRef.current?.close()} aria-label="Close history">✕</button></div>
+        {history}
+      </div>
+    </dialog>}
+    <main className="site-main">{children}</main>
+  </>;
+}

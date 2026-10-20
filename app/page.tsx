@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Analytics } from "@vercel/analytics/next";
+import AuditResult from "./components/AuditResult";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { addDoc, collection, getDocs, query, where } from "firebase/firestore";
 import Layout from "./components/Layout";
@@ -55,72 +55,56 @@ export default function Home() {
       const result = await generateAudit(name);
       const entry: SavedReport = { id: crypto.randomUUID(), company: name, report: result, createdAt: new Date().toISOString() };
       setReport(result);
-      try {
-        if (user) {
-          const saved = await addDoc(collection(db, "reports"), { ...entry, uid: user.uid });
-          entry.id = saved.id;
-        } else { localStorage.setItem("anon_reports", JSON.stringify([entry, ...localReports()])); }
-        setReports((previous) => [entry, ...previous]); setActiveId(entry.id);
-      } catch { setNotice("Report ready. History couldn’t be saved on this device."); }
+      setActiveId(entry.id);
+      // History writes must never keep a completed report in its loading state.
+      void (async () => {
+        try {
+          if (user) {
+            const saved = await addDoc(collection(db, "reports"), { ...entry, uid: user.uid });
+            setActiveId((current) => current === entry.id ? saved.id : current);
+            setReports((previous) => [{ ...entry, id: saved.id }, ...previous]);
+          } else {
+            localStorage.setItem("anon_reports", JSON.stringify([entry, ...localReports()]));
+            setReports((previous) => [entry, ...previous]);
+          }
+        } catch { setNotice("Report ready. History couldn’t be saved on this device."); }
+      })();
     } catch (err) { setError(err instanceof Error ? err.message : "Something went wrong. Please try again."); }
     finally { busy.current = false; setLoading(false); }
   }
-  const findings = report?.eco_audit.findings || [];
-  const scored = report?.greenscore.scoring_version === 2 && report.greenscore.evidence_sufficient === true;
-  const score = report?.greenscore.score || 0;
-  const sidebar = <ReportsSidebar reports={reports} activeReportId={activeId} sessionStarted={!!report || !!error} user={user}
+
+  const sidebar = <ReportsSidebar disabled={loading} reports={reports} activeReportId={activeId} sessionStarted={!!report || !!error} user={user}
     onNewChat={() => { if (busy.current) return; setReport(null); setCompany(""); setError(""); setNotice(""); setActiveId(null); }}
     onSelectReport={(entry) => { if (busy.current) return; setReport(entry.report); setCompany(entry.company); setActiveId(entry.id); setError(""); setNotice(""); }}
     onDeleteReport={(id) => { const updated = reports.filter((r) => r.id !== id); setReports(updated); if (!user) { try { localStorage.setItem("anon_reports", JSON.stringify(updated)); } catch { setNotice("History couldn’t be updated."); } } if (activeId === id) { setReport(null); setActiveId(null); } }} />;
 
   return <Layout showSidebar sidebarContent={sidebar}>
-    <Analytics />
-    <div className="mx-auto max-w-3xl px-5 py-12 sm:px-8 sm:py-16 text-slate-900">
-      <header className="mb-8">
-        <p className="text-sm font-semibold text-emerald-700 mb-3">A clearer look at company claims</p>
-        <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">How does a company treat the planet?</h1>
-        <p className="mt-4 text-slate-600 leading-relaxed">Look up its environmental record, with sources you can read for yourself.</p>
+    <div className={`audit-page ${report || loading ? "has-result" : ""}`}>
+      <header className="audit-intro">
+        <h1>{report || loading ? "Company check" : <>Look past the<br className="hero-break" /> green claims.</>}</h1>
+        {!report && !loading && <p>A company’s environmental record, made clearer.</p>}
       </header>
-      <form onSubmit={submit} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <label htmlFor="company" className="block text-sm font-semibold mb-2">Company name</label>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <input id="company" value={company} onChange={(event) => setCompany(event.target.value)} disabled={loading} maxLength={200} required placeholder="e.g. Apple" autoComplete="organization" className="min-w-0 flex-1 rounded-lg border border-slate-300 px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-600 disabled:bg-slate-50" />
-          <button disabled={loading || !company.trim()} className="rounded-lg bg-emerald-700 px-5 py-3 font-semibold text-white hover:bg-emerald-800 disabled:opacity-60">{loading ? "Checking…" : "Check company"}</button>
+      <form onSubmit={submit} className="company-search">
+        <label htmlFor="company" className="sr-only">Company name or website</label>
+        <div className="search-field">
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4 4" /></svg>
+          <input id="company" value={company} onChange={(event) => setCompany(event.target.value)} disabled={loading} maxLength={200} required placeholder="Company name or website" autoComplete="organization" />
+          <button disabled={loading || !company.trim()}>{loading ? "Checking…" : <>Check <span aria-hidden="true">↗</span></>}</button>
         </div>
-        <p className="mt-3 text-xs text-slate-500">No account needed. Research can take up to two minutes.</p>
+        {!report && !loading && <div className="search-help"><span>Try</span>{["Apple", "Amazon", "Shell"].map((name) => <button key={name} type="button" onClick={() => { setCompany(name); document.getElementById("company")?.focus(); }}>{name}</button>)}<span className="no-account">No account needed</span></div>}
       </form>
-      <section ref={resultRef} tabIndex={-1} aria-label="Company research" aria-busy={loading} className="mt-6 outline-none">
-        {loading && <div role="status" aria-live="polite" className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 sm:p-8">
-          <div className="flex items-center gap-4"><span aria-hidden="true" className="h-7 w-7 shrink-0 rounded-full border-[3px] border-emerald-200 border-t-emerald-700 motion-safe:animate-spin" /><h2 className="text-xl font-semibold">Checking {company.trim()}</h2></div>
-          <p className="mt-4 text-slate-700">Searching environmental reporting and building a source-backed summary.</p>
-          <p className="mt-3 text-sm text-emerald-800">{elapsed >= 60 ? "Still working. Broader research can take a little longer." : "Your report will appear here as soon as it’s ready."}</p>
-          <p className="mt-4 text-xs text-slate-500" aria-hidden="true">{elapsed}s elapsed · Usually ready within two minutes</p>
+      <section ref={resultRef} tabIndex={-1} aria-label="Company research" aria-busy={loading} className="research-region">
+        {loading && <div className="research-loading" role="status" aria-live="polite">
+          <div className="loading-heading"><span className="research-spinner" aria-hidden="true" /><h2>Researching {company.trim()}</h2></div>
+          <p>Checking company reports and independent sources.</p>
+          <div className="loading-preview" aria-hidden="true"><span /><span /><span /></div>
+          <p className="loading-time" aria-hidden="true">{elapsed}s · {elapsed >= 60 ? "Still researching. Thanks for your patience." : "This can take up to two minutes."}</p>
         </div>}
-        {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-5 text-red-900"><h2 className="font-semibold">We couldn’t finish this check</h2><p className="mt-2 text-sm">{error}</p><button onClick={() => { document.getElementById("company")?.focus(); }} className="mt-3 text-sm underline">Review the name and try again</button></div>}
-        {report && <div className="space-y-5">
-          <article className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
-            <div className="flex flex-wrap items-start justify-between gap-5">
-              <div><h2 className="text-2xl font-semibold">{report.company}</h2><p className="mt-2 text-sm text-slate-500">{findings.length} findings · {report.greenscore.source_count ?? new Set(findings.map((f) => f.source_domain)).size} source websites</p></div>
-              {scored && <div className="text-right"><p className="text-3xl font-semibold">{score}<span className="text-base font-normal text-slate-400"> / 100</span></p><p className="text-xs text-slate-500 mt-1">GreenScore · Higher is better</p></div>}
-            </div>
-            <p className="mt-5 font-semibold text-emerald-800">{scored ? (score >= 80 ? "Mostly positive evidence" : score < 50 ? "Evidence of environmental concerns" : "A mixed environmental record") : "More evidence needed for a score"}</p>
-            {!scored && <p className="mt-2 text-sm text-slate-600">{report.greenscore.scoring_version === 2 ? "A score needs relevant evidence from at least three different source websites. You can still read what we found below." : "This saved report uses an older scoring method. Check the company again for an updated assessment."}</p>}
-            <p className="mt-4 leading-relaxed text-slate-700">{report.eco_audit.summary}</p>
-            {!!report.greenscore.excluded_findings && <p className="mt-3 text-sm text-slate-500">Some incomplete findings were excluded. The assessment uses only the findings below.</p>}
-          </article>
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
-            <h2 className="text-lg font-semibold">What we found</h2>
-            <div className="mt-2 divide-y divide-slate-100">{findings.map((finding, index) => <details key={`${finding.source_url}-${index}`} className="py-4">
-              <summary className="cursor-pointer font-medium leading-relaxed">{finding.title}<span className={`ml-2 text-xs font-normal ${finding.event_risk_score > 0 ? "text-red-700" : finding.event_risk_score < 0 ? "text-emerald-700" : "text-slate-500"}`}>{finding.event_risk_score > 0 ? "Concern" : finding.event_risk_score < 0 ? "Progress" : "Mixed"}</span></summary>
-              <p className="mt-3 text-sm leading-relaxed text-slate-600">{finding.summary}</p>
-              <a href={finding.source_url} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm text-emerald-700 underline break-all">Read source{finding.source_domain ? ` · ${finding.source_domain}` : ""} ↗</a>
-              {finding.article_date && <p className="mt-2 text-xs text-slate-500">Published {finding.article_date}</p>}
-            </details>)}</div>
-          </section>
-          <details className="px-1 text-sm text-slate-600"><summary className="cursor-pointer font-medium">About this assessment</summary><div className="mt-3 space-y-3 leading-relaxed"><p>AI researches environmental events using web search. Links and claims are not independently verified. This is a starting point for research, not a certified sustainability rating.</p><p>For updated reports, each source website has equal weight, shared between its findings. Event impact combines severity, credibility, recency, scope and confidence. The score starts at 50; harmful evidence lowers it and beneficial evidence raises it. Mixed findings have no directional impact.</p><p>We withhold the score unless at least three source websites provide directional evidence. Different websites can share ownership or repeat the same reporting, so source count does not guarantee independent corroboration.</p></div></details>
-        </div>}
-        {notice && <p role="status" className="mt-4 text-sm text-slate-600">{notice}</p>}
+        {error && <div role="alert" className="research-error"><h2>We couldn’t complete this check</h2><p>{error}</p><button onClick={() => document.getElementById("company")?.focus()}>Review the company name ↑</button></div>}
+        {report && <AuditResult key={activeId || report.eco_audit.last_audit_date} report={report} />}
+        {notice && <p role="status" className="research-notice">{notice}</p>}
       </section>
+      {!report && !loading && !error && <p className="landing-note">Company claims. Independent reporting.<br />One place to start your research.</p>}
     </div>
   </Layout>;
 }

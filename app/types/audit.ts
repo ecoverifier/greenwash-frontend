@@ -51,6 +51,7 @@ type TopDriver = {
 
 export type ReportType = {
   company: string;
+  company_identity?: { name: string; domain: string; description: string };
   eco_audit: {
     last_audit_date: string;
     total_events: number;
