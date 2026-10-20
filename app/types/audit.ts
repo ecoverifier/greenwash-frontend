@@ -61,6 +61,10 @@ export type ReportType = {
   };
   greenscore: {
     score: number;
+    scoring_version?: number;
+    excluded_findings?: number;
+    evidence_sufficient?: boolean;
+    source_count?: number;
     risk_score?: number;
     risk_level?: string;
     rationale?: string;
